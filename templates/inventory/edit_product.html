@@ -1,0 +1,164 @@
+<!-- templates/inventory/edit_product.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Edit Product - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+      
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">Edit Product: {{ product.name }}</h1>
+                    <div class="btn-group">
+                        <a href="{% url 'inventory:product_detail' product.id %}" class="btn btn-outline-light">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Product
+                        </a>
+                        <a href="{% url 'inventory:product_list' %}" class="btn btn-outline-secondary">
+                            <i class="fas fa-list me-2"></i>Products List
+                        </a>
+                    </div>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-family: 'Poppins', sans-serif;">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="card shadow-card rounded-card">
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.name.id_for_label }}" class="form-label">Product Name</label>
+                                        {{ form.name }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.sku.id_for_label }}" class="form-label">SKU/Code</label>
+                                        {{ form.sku }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.barcode.id_for_label }}" class="form-label">Barcode (Optional)</label>
+                                        {{ form.barcode }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                                        {{ form.category }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.price.id_for_label }}" class="form-label">Selling Price (₦)</label>
+                                        {{ form.price }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.cost_price.id_for_label }}" class="form-label">Cost Price (₦)</label>
+                                        {{ form.cost_price }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.stock_quantity.id_for_label }}" class="form-label">Current Stock</label>
+                                        {{ form.stock_quantity }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.minimum_stock.id_for_label }}" class="form-label">Minimum Stock Level</label>
+                                        {{ form.minimum_stock }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.unit_of_measure.id_for_label }}" class="form-label">Unit of Measure</label>
+                                        {{ form.unit_of_measure }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
+                                        {{ form.status }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.supplier.id_for_label }}" class="form-label">Supplier (Optional)</label>
+                                        {{ form.supplier }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.expiry_date.id_for_label }}" class="form-label">Expiry Date (Optional)</label>
+                                        {{ form.expiry_date }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.weight.id_for_label }}" class="form-label">Weight (kg) (Optional)</label>
+                                        {{ form.weight }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.dimensions.id_for_label }}" class="form-label">Dimensions (LxWxH cm) (Optional)</label>
+                                        {{ form.dimensions }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                                {{ form.description }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.image.id_for_label }}" class="form-label">Product Image (Optional)</label>
+                                {{ form.image }}
+                                {% if product.image %}
+                                    <div class="mt-2">
+                                        <img src="{{ product.image.url }}" alt="Current Image" class="img-thumbnail" style="max-height: 100px;">
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'inventory:product_detail' product.id %}" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn gradient-button">
+                                    <i class="fas fa-save me-2"></i>Update Product
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

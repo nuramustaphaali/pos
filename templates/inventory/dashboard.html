@@ -1,0 +1,126 @@
+<!-- templates/inventory/dashboard.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Inventory Dashboard - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+     
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">Inventory Dashboard</h1>
+                    <div class="btn-group">
+                        <a href="{% url 'inventory:add_product' %}" class="btn gradient-button">
+                            <i class="fas fa-plus me-2"></i>Add Product
+                        </a>
+                        <a href="{% url 'inventory:add_category' %}" class="btn btn-outline-light">
+                            <i class="fas fa-tag me-2"></i>Add Category
+                        </a>
+                    </div>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <!-- Stats Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card gradient-card shadow-card rounded-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-boxes fa-2x text-white mb-2"></i>
+                                <h4 class="text-white mb-1">{{ total_products }}</h4>
+                                <small class="text-white-50">Total Products</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card gradient-card shadow-card rounded-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-cubes fa-2x text-white mb-2"></i>
+                                <h4 class="text-white mb-1">{{ total_stock }}</h4>
+                                <small class="text-white-50">Total Stock</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-gradient-warning shadow-card rounded-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-exclamation-triangle fa-2x text-white mb-2"></i>
+                                <h4 class="text-white mb-1">{{ low_stock_count }}</h4>
+                                <small class="text-white-50">Low Stock</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-gradient-danger shadow-card rounded-card">
+                            <div class="card-body text-center">
+                                <i class="fas fa-exclamation-circle fa-2x text-white mb-2"></i>
+                                <h4 class="text-white mb-1">{{ out_of_stock_count }}</h4>
+                                <small class="text-white-50">Out of Stock</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent & Low Stock Products -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card shadow-card rounded-card mb-4">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="gradient-text mb-0"><i class="fas fa-history me-2"></i>Recent Products</h5>
+                            </div>
+                            <div class="card-body">
+                                {% for product in recent_products %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <h6 class="mb-0">{{ product.name }}</h6>
+                                        <small class="text-muted">{{ product.sku }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-{{ product.stock_status }}">{{ product.stock_quantity }}</span>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <p class="text-muted text-center">No recent products</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-card rounded-card mb-4">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="gradient-text mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert</h5>
+                            </div>
+                            <div class="card-body">
+                                {% for product in low_stock_products %}
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <h6 class="mb-0">{{ product.name }}</h6>
+                                        <small class="text-muted">{{ product.sku }}</small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-warning">{{ product.stock_quantity }}</span>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <p class="text-muted text-center">No low stock products</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

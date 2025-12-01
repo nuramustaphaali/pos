@@ -1,0 +1,95 @@
+<!-- templates/inventory/restock_product.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Restock Product - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">Restock Product</h1>
+                    <a href="{% url 'inventory:product_detail' product.id %}" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Product
+                    </a>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="card shadow-card rounded-card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>{{ product.name }}</h5>
+                                <p class="text-muted">SKU: {{ product.sku }}</p>
+                                <div class="d-flex align-items-center">
+                                    <span class="h5 mb-0 me-3">Current Stock: <span class="text-success">{{ product.stock_quantity }}</span></span>
+                                    <span class="badge bg-{{ product.stock_status }}">{{ product.get_stock_status_display }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Restock Tips:</strong>
+                                    <ul class="mb-0 mt-1">
+                                        <li>Enter the quantity you're adding to stock</li>
+                                        <li>Provide a reason for the restock</li>
+                                        <li>Include reference number if applicable</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-card rounded-card">
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="quantity" class="form-label">Quantity to Add</label>
+                                        <input type="number" name="quantity" id="quantity" class="form-control gradient-input" 
+                                               placeholder="Enter quantity" min="1" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="reference_number" class="form-label">Reference Number</label>
+                                        <input type="text" name="reference_number" id="reference_number" class="form-control gradient-input" 
+                                               placeholder="Reference number (optional)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Reason for Restock</label>
+                                <textarea name="reason" id="reason" class="form-control gradient-input" rows="3" 
+                                          placeholder="Enter reason for restock (e.g., new purchase, returned goods, etc.)" required></textarea>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'inventory:product_detail' product.id %}" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn gradient-button">
+                                    <i class="fas fa-plus-circle me-2"></i>Restock Product
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

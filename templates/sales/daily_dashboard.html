@@ -1,0 +1,206 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Daily Dashboard - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">Today's Dashboard</h1>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-light" onclick="refreshDashboard()">
+                            <i class="fas fa-sync me-2"></i>Refresh
+                        </button>
+                        <button class="btn gradient-button" onclick="printSummary()">
+                            <i class="fas fa-print me-2"></i>Print
+                        </button>
+                    </div>
+                </div>
+                
+               <!--  {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %} -->
+                
+                <!-- Today's Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card gradient-card shadow-card rounded-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-coins fa-2x text-white mb-2"></i>
+                                <h4 class="text-white mb-1">₦{{ summary.total_revenue|floatformat:2 }}</h4>
+                                <small class="text-white-50">Total Revenue</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card gradient-card shadow-card rounded-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-shopping-cart fa-2x text-white mb-2"></i>
+                                <h4 class="text-white mb-1">{{ summary.total_transactions }}</h4>
+                                <small class="text-white-50">Total Transactions</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-gradient-success shadow-card rounded-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-cash-register fa-2x text-white mb-2"></i>
+                                <h4 class="text-white mb-1">₦{{ summary.cash_revenue|floatformat:2 }}</h4>
+                                <small class="text-white-50">Cash Revenue</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-gradient-info shadow-card rounded-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-credit-card fa-2x text-white mb-2"></i>
+                                <h4 class="text-white mb-1">₦{{ summary.pos_revenue|floatformat:2 }}</h4>
+                                <small class="text-white-50">POS Revenue</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Payment Method Breakdown -->
+                <div class="card shadow-card rounded-card mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="gradient-text mb-0"><i class="fas fa-chart-pie me-2"></i>Payment Method Breakdown</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center p-3 rounded" style="background: rgba(40, 167, 69, 0.1);">
+                                    <i class="fas fa-money-bill-wave fa-2x text-success mb-2"></i>
+                                    <h5 class="text-success mb-1">₦{{ summary.cash_revenue|floatformat:2 }}</h5>
+                                    <small class="text-muted">Cash ({{ summary.cash_transactions }})</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3 rounded" style="background: rgba(0, 123, 255, 0.1);">
+                                    <i class="fas fa-exchange-alt fa-2x text-primary mb-2"></i>
+                                    <h5 class="text-primary mb-1">₦{{ summary.transfer_revenue|floatformat:2 }}</h5>
+                                    <small class="text-muted">Transfer ({{ summary.transfer_transactions }})</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3 rounded" style="background: rgba(111, 66, 193, 0.1);">
+                                    <i class="fas fa-credit-card fa-2x text-primary mb-2"></i>
+                                    <h5 class="text-primary mb-1">₦{{ summary.pos_revenue|floatformat:2 }}</h5>
+                                    <small class="text-muted">POS ({{ summary.pos_transactions }})</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center p-3 rounded" style="background: rgba(253, 126, 20, 0.1);">
+                                    <i class="fas fa-mobile-alt fa-2x text-warning mb-2"></i>
+                                    <h5 class="text-warning mb-1">₦{{ summary.mobile_money_revenue|floatformat:2 }}</h5>
+                                    <small class="text-muted">Mobile Money ({{ summary.mobile_money_transactions }})</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Mini Chart -->
+                        <div class="mt-4">
+                            <canvas id="paymentChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Top Selling Items and Low Stock -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card shadow-card rounded-card">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="gradient-text mb-0"><i class="fas fa-chart-line me-2"></i>Top Selling Items</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted text-center">Top selling items will appear here</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card shadow-card rounded-card">
+                            <div class="card-header bg-white border-0">
+                                <h5 class="gradient-text mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Low Stock Alert</h5>
+                            </div>
+                            <div class="card-body">
+                                {% if low_stock_products %}
+                                    {% for product in low_stock_products %}
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <div>
+                                            <h6 class="mb-0">{{ product.name }}</h6>
+                                            <small class="text-muted">{{ product.sku }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge bg-{{ product.stock_status }}">
+                                                {{ product.stock_quantity }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p class="text-success text-center">All products have sufficient stock</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Payment method chart
+const ctx = document.getElementById('paymentChart').getContext('2d');
+const paymentChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+        labels: ['Cash', 'Transfer', 'POS', 'Mobile Money'],
+        datasets: [{
+            data: [
+                {{ summary.cash_revenue|floatformat:2 }},
+                {{ summary.transfer_revenue|floatformat:2 }},
+                {{ summary.pos_revenue|floatformat:2 }},
+                {{ summary.mobile_money_revenue|floatformat:2 }}
+            ],
+            backgroundColor: [
+                'rgba(40, 167, 69, 0.8)',
+                'rgba(0, 123, 255, 0.8)',
+                'rgba(111, 66, 193, 0.8)',
+                'rgba(253, 126, 20, 0.8)'
+            ],
+            borderWidth: 2,
+            borderColor: '#fff'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+function refreshDashboard() {
+    location.reload();
+}
+
+function printSummary() {
+    window.print();
+}
+</script>
+{% endblock %}

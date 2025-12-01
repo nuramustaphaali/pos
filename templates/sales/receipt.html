@@ -1,0 +1,117 @@
+<!-- templates/sales/receipt.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt - {{ order.order_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .receipt {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #4361ee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .order-info {
+            margin-bottom: 15px;
+        }
+        .items {
+            margin-bottom: 15px;
+        }
+        .item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .totals {
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #ccc;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt">
+        <div class="header">
+            <h2>{{ system_settings.business_name|default:"Modern POS" }}</h2>
+            <p>{{ system_settings.business_address|default:"" }}</p>
+            <p>{{ system_settings.business_phone|default:"" }}</p>
+        </div>
+        
+        <div class="order-info">
+            <div><strong>Order:</strong> {{ order.order_number }}</div>
+            <div><strong>Date:</strong> {{ order.created_at|date:"M d, Y H:i" }}</div>
+            <div><strong>Cashier:</strong> {{ order.cashier }}</div>
+            {% if order.customer_name %}
+                <div><strong>Customer:</strong> {{ order.customer_name }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="items">
+            {% for item in order_items %}
+            <div class="item">
+                <span>{{ item.quantity }} x {{ item.product.name }}</span>
+                <span>₦{{ item.total_price }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="totals">
+            <div class="total-row">
+                <span>Subtotal:</span>
+                <span>₦{{ order.total_amount }}</span>
+            </div>
+            <div class="total-row">
+                <span>Tax:</span>
+                <span>₦{{ order.tax_amount }}</span>
+            </div>
+            <div class="total-row">
+                <span><strong>Total:</strong></span>
+                <span><strong>₦{{ order.final_amount }}</strong></span>
+            </div>
+            <div class="total-row">
+                <span>Payment:</span>
+                <span>{{ order.get_payment_method_display }}</span>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Thank you for your business!</p>
+            <p>{{ system_settings.receipt_footer|default:"" }}</p>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-print when page loads
+        window.onload = function() {
+            window.print();
+        };
+    </script>
+</body>
+</html>

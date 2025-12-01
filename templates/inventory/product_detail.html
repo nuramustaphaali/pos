@@ -1,0 +1,222 @@
+<!-- templates/inventory/product_detail.html (updated) -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}{{ product.name }} - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+    
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">{{ product.name }}</h1>
+                    <div class="btn-group">
+                        <a href="{% url 'inventory:edit_product' product.id %}" class="btn btn-outline-light">
+                            <i class="fas fa-edit me-2"></i>Edit
+                        </a>
+                        <a href="{% url 'inventory:restock_product' product.id %}" class="btn gradient-button">
+                            <i class="fas fa-plus me-2"></i>Restock
+                        </a>
+                        <a href="{% url 'inventory:reduce_stock' product.id %}" class="btn btn-outline-danger">
+                            <i class="fas fa-minus me-2"></i>Reduce
+                        </a>
+                    </div>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <!-- Product Info Card -->
+                <div class="card shadow-card rounded-card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                {% if product.image %}
+                                    <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}">
+                                {% else %}
+                                    <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                        <i class="fas fa-box fa-5x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h4>{{ product.name }}</h4>
+                                        <p class="text-muted">SKU: {{ product.sku }}</p>
+                                        {% if product.barcode %}
+                                            <p><strong>Barcode:</strong> {{ product.barcode }}</p>
+                                        {% endif %}
+                                        <p><strong>Category:</strong> <span class="badge" style="background-color: {{ product.category.color_code }};">{{ product.category.name }}</span></p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="text-center">
+                                            <h2 class="text-success">₦{{ product.price }}</h2>
+                                            <div class="mt-3">
+                                                <span class="h4">Stock: </span>
+                                                <span class="badge bg-{{ product.stock_status }} fs-5">{{ product.stock_quantity }}</span>
+                                                <div class="mt-2">
+                                                    <small class="text-muted">Min: {{ product.minimum_stock }}</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    {% if product.description %}
+                                        <p><strong>Description:</strong> {{ product.description }}</p>
+                                    {% endif %}
+                                    {% if product.supplier %}
+                                        <p><strong>Supplier:</strong> {{ product.supplier }}</p>
+                                    {% endif %}
+                                    {% if product.weight %}
+                                        <p><strong>Weight:</strong> {{ product.weight }} kg</p>
+                                    {% endif %}
+                                    {% if product.dimensions %}
+                                        <p><strong>Dimensions:</strong> {{ product.dimensions }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Action Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card shadow-card rounded-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-plus-circle fa-3x text-success mb-2"></i>
+                                <h5>Restock</h5>
+                                <a href="{% url 'inventory:restock_product' product.id %}" class="btn btn-success">Add Stock</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-card rounded-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-minus-circle fa-3x text-danger mb-2"></i>
+                                <h5>Reduce Stock</h5>
+                                <a href="{% url 'inventory:reduce_stock' product.id %}" class="btn btn-danger">Remove Stock</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-card rounded-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-history fa-3x text-primary mb-2"></i>
+                                <h5>History</h5>
+                                <a href="{% url 'inventory:stock_adjustment_history' %}?product={{ product.id }}" class="btn btn-primary">View History</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card shadow-card rounded-card text-center">
+                            <div class="card-body">
+                                <i class="fas fa-chart-line fa-3x text-info mb-2"></i>
+                                <h5>Analytics</h5>
+                                <button class="btn btn-info" disabled>Coming Soon</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Adjustments -->
+                <div class="card shadow-card rounded-card mb-4">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="gradient-text mb-0"><i class="fas fa-history me-2"></i>Recent Stock Adjustments</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if adjustments %}
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Quantity</th>
+                                            <th>Reason</th>
+                                            <th>Performed By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for adjustment in adjustments %}
+                                        <tr>
+                                            <td>{{ adjustment.created_at|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ adjustment.adjustment_type }}">
+                                                    {{ adjustment.get_adjustment_type_display }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="{% if adjustment.adjustment_type in 'restock,return' %}text-success{% else %}text-danger{% endif %}">
+                                                    {% if adjustment.adjustment_type in 'restock,return' %}+{% else %}-{% endif %}{{ adjustment.quantity }}
+                                                </span>
+                                            </td>
+                                            <td>{{ adjustment.reason|truncatewords:5 }}</td>
+                                            <td>{{ adjustment.performed_by }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center">No stock adjustments recorded yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Recent Transactions -->
+                <div class="card shadow-card rounded-card">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="gradient-text mb-0"><i class="fas fa-exchange-alt me-2"></i>Recent Transactions</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if transactions %}
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Type</th>
+                                            <th>Quantity</th>
+                                            <th>Reference</th>
+                                            <th>Created By</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for transaction in transactions %}
+                                        <tr>
+                                            <td>{{ transaction.created_at|date:"M d, Y H:i" }}</td>
+                                            <td>
+                                                <span class="badge bg-{{ transaction.transaction_type }}">
+                                                    {{ transaction.get_transaction_type_display }}
+                                                </span>
+                                            </td>
+                                            <td>{{ transaction.quantity }}</td>
+                                            <td>{{ transaction.reference|default:"-" }}</td>
+                                            <td>{{ transaction.created_by }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted text-center">No transactions recorded yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+<!-- templates/inventory/reduce_stock.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Reduce Stock - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">Reduce Stock</h1>
+                    <a href="{% url 'inventory:product_detail' product.id %}" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Product
+                    </a>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="card shadow-card rounded-card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>{{ product.name }}</h5>
+                                <p class="text-muted">SKU: {{ product.sku }}</p>
+                                <div class="d-flex align-items-center">
+                                    <span class="h5 mb-0 me-3">Current Stock: <span class="text-success">{{ product.stock_quantity }}</span></span>
+                                    <span class="badge bg-{{ product.stock_status }}">{{ product.get_stock_status_display }}</span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Caution:</strong> Reducing stock will decrease your available inventory. 
+                                    You can only reduce up to {{ product.stock_quantity }} units.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-card rounded-card">
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="quantity" class="form-label">Quantity to Reduce</label>
+                                        <input type="number" name="quantity" id="quantity" class="form-control gradient-input" 
+                                               placeholder="Enter quantity" min="1" max="{{ product.stock_quantity }}" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="reference_number" class="form-label">Reference Number</label>
+                                        <input type="text" name="reference_number" id="reference_number" class="form-control gradient-input" 
+                                               placeholder="Reference number (optional)">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reason" class="form-label">Reason for Reduction</label>
+                                <select name="reason" id="reason" class="form-control gradient-select" required>
+                                    <option value="">Select reason...</option>
+                                    <option value="sales">Sales</option>
+                                    <option value="damage">Damage/Loss</option>
+                                    <option value="theft">Theft</option>
+                                    <option value="return_to_supplier">Return to Supplier</option>
+                                    <option value="internal_use">Internal Use</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="reason_details" class="form-label">Additional Details</label>
+                                <textarea name="reason_details" id="reason_details" class="form-control gradient-input" rows="2" 
+                                          placeholder="Provide additional details about the reduction"></textarea>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'inventory:product_detail' product.id %}" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn gradient-button">
+                                    <i class="fas fa-minus-circle me-2"></i>Reduce Stock
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

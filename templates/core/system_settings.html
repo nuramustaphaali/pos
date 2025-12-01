@@ -1,0 +1,301 @@
+<!-- templates/core/system_settings.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}System Settings - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">System Settings</h1>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-light" onclick="previewTheme()">
+                            <i class="fas fa-eye me-2"></i>Preview
+                        </button>
+                        <button type="button" class="btn gradient-button" onclick="saveSettings()">
+                            <i class="fas fa-save me-2"></i>Save Settings
+                        </button>
+                    </div>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <form method="post" enctype="multipart/form-data" id="settingsForm">
+                    {% csrf_token %}
+                    
+                    <!-- Business Information -->
+                    <div class="card shadow-card rounded-card mb-4">
+                        <div class="card-header bg-white border-0">
+                            <h5 class="gradient-text mb-0"><i class="fas fa-building me-2"></i>Business Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.business_name.id_for_label }}" class="form-label">Business Name</label>
+                                        {{ form.business_name }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.currency.id_for_label }}" class="form-label">Currency</label>
+                                        {{ form.currency }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.business_phone.id_for_label }}" class="form-label">Phone Number</label>
+                                        {{ form.business_phone }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.business_email.id_for_label }}" class="form-label">Email Address</label>
+                                        {{ form.business_email }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.business_address.id_for_label }}" class="form-label">Business Address</label>
+                                {{ form.business_address }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.logo.id_for_label }}" class="form-label">Business Logo</label>
+                                {{ form.logo }}
+                                {% if settings.logo %}
+                                    <div class="mt-2">
+                                        <img src="{{ settings.logo.url }}" alt="Current Logo" class="img-thumbnail" style="max-height: 100px;">
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Toggle Options -->
+                    <div class="card shadow-card rounded-card mb-4">
+                        <div class="card-header bg-white border-0">
+                            <h5 class="gradient-text mb-0"><i class="fas fa-toggle-on me-2"></i>Feature Toggles</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.show_inventory }}
+                                        <label class="form-check-label" for="{{ form.show_inventory.id_for_label }}">
+                                            Show Inventory Module
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.show_receipts }}
+                                        <label class="form-check-label" for="{{ form.show_receipts.id_for_label }}">
+                                            Show Receipts Module
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.show_analytics }}
+                                        <label class="form-check-label" for="{{ form.show_analytics.id_for_label }}">
+                                            Show Analytics Dashboard
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.show_reports }}
+                                        <label class="form-check-label" for="{{ form.show_reports.id_for_label }}">
+                                            Show Reports Module
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.enable_sms }}
+                                        <label class="form-check-label" for="{{ form.enable_sms.id_for_label }}">
+                                            Enable SMS Notifications
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.enable_email }}
+                                        <label class="form-check-label" for="{{ form.enable_email.id_for_label }}">
+                                            Enable Email Notifications
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Theme Customizer -->
+                    <div class="card shadow-card rounded-card mb-4">
+                        <div class="card-header bg-white border-0">
+                            <h5 class="gradient-text mb-0"><i class="fas fa-palette me-2"></i>Theme Customizer</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="{{ form.primary_color.id_for_label }}" class="form-label">Primary Color</label>
+                                        {{ form.primary_color }}
+                                        <div class="color-preview" style="background-color: {{ settings.primary_color }}; width: 30px; height: 30px; border-radius: 50%; display: inline-block; margin-left: 10px;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="{{ form.secondary_color.id_for_label }}" class="form-label">Secondary Color</label>
+                                        {{ form.secondary_color }}
+                                        <div class="color-preview" style="background-color: {{ settings.secondary_color }}; width: 30px; height: 30px; border-radius: 50%; display: inline-block; margin-left: 10px;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label for="{{ form.accent_color.id_for_label }}" class="form-label">Accent Color</label>
+                                        {{ form.accent_color }}
+                                        <div class="color-preview" style="background-color: {{ settings.accent_color }}; width: 30px; height: 30px; border-radius: 50%; display: inline-block; margin-left: 10px;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.card_radius.id_for_label }}" class="form-label">Card Border Radius (px)</label>
+                                        {{ form.card_radius }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.analytics_refresh_rate.id_for_label }}" class="form-label">Analytics Refresh Rate (seconds)</label>
+                                        {{ form.analytics_refresh_rate }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Receipt Settings -->
+                    <div class="card shadow-card rounded-card mb-4">
+                        <div class="card-header bg-white border-0">
+                            <h5 class="gradient-text mb-0"><i class="fas fa-receipt me-2"></i>Receipt Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check form-switch mb-3">
+                                {{ form.show_receipt_logo }}
+                                <label class="form-check-label" for="{{ form.show_receipt_logo.id_for_label }}">
+                                    Show Logo on Receipts
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.receipt_header.id_for_label }}" class="form-label">Receipt Header</label>
+                                {{ form.receipt_header }}
+                                <small class="text-muted">Text that appears at the top of receipts</small>
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.receipt_footer.id_for_label }}" class="form-label">Receipt Footer</label>
+                                {{ form.receipt_footer }}
+                                <small class="text-muted">Text that appears at the bottom of receipts</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-outline-secondary" onclick="resetToDefaults()">
+                            Reset to Defaults
+                        </button>
+                        <button type="submit" class="btn gradient-button">
+                            <i class="fas fa-save me-2"></i>Save All Settings
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .color-preview {
+        vertical-align: middle;
+    }
+    
+    .form-switch .form-check-input {
+        height: 24px;
+        width: 48px;
+    }
+    
+    .form-control-color {
+        height: 40px;
+        padding: 0.375rem;
+    }
+    
+    /* Preview theme changes */
+    .theme-preview {
+        transition: all 0.3s ease;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewTheme() {
+    // Get form values
+    const primaryColor = document.getElementById('{{ form.primary_color.id_for_label }}').value;
+    const secondaryColor = document.getElementById('{{ form.secondary_color.id_for_label }}').value;
+    const accentColor = document.getElementById('{{ form.accent_color.id_for_label }}').value;
+    const cardRadius = document.getElementById('{{ form.card_radius.id_for_label }}').value + 'px';
+    
+    // Apply theme preview to current page
+    document.documentElement.style.setProperty('--primary-gradient', `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`);
+    document.documentElement.style.setProperty('--secondary-gradient', `linear-gradient(135deg, ${accentColor} 0%, ${primaryColor} 100%)`);
+    
+    // Update card radius
+    document.querySelectorAll('.rounded-card').forEach(card => {
+        card.style.borderRadius = cardRadius;
+    });
+    
+    // Update gradient text
+    document.querySelectorAll('.gradient-text').forEach(text => {
+        text.style.background = `linear-gradient(135deg, ${accentColor} 0%, ${primaryColor} 100%)`;
+        text.style.webkitBackgroundClip = 'text';
+        text.style.webkitTextFillColor = 'transparent';
+        text.style.backgroundClip = 'text';
+    });
+    
+    alert('Theme preview applied! Changes will be saved when you submit the form.');
+}
+
+function saveSettings() {
+    document.getElementById('settingsForm').submit();
+}
+
+function resetToDefaults() {
+    if (confirm('Are you sure you want to reset all settings to defaults?')) {
+        // Reset to default values
+        document.getElementById('{{ form.primary_color.id_for_label }}').value = '#667eea';
+        document.getElementById('{{ form.secondary_color.id_for_label }}').value = '#764ba2';
+        document.getElementById('{{ form.accent_color.id_for_label }}').value = '#f093fb';
+        document.getElementById('{{ form.card_radius.id_for_label }}').value = '20';
+        document.getElementById('{{ form.analytics_refresh_rate.id_for_label }}').value = '30';
+        
+        // Reset toggles
+        document.getElementById('{{ form.show_inventory.id_for_label }}').checked = true;
+        document.getElementById('{{ form.show_receipts.id_for_label }}').checked = true;
+        document.getElementById('{{ form.show_analytics.id_for_label }}').checked = true;
+        document.getElementById('{{ form.show_reports.id_for_label }}').checked = true;
+        document.getElementById('{{ form.enable_sms.id_for_label }}').checked = false;
+        document.getElementById('{{ form.enable_email.id_for_label }}').checked = false;
+        document.getElementById('{{ form.show_receipt_logo.id_for_label }}').checked = true;
+    }
+}
+</script>
+{% endblock %}

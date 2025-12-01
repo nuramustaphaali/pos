@@ -1,0 +1,94 @@
+<!-- templates/inventory/category_list.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Product Categories - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">Product Categories</h1>
+                    <a href="{% url 'inventory:add_category' %}" class="btn gradient-button">
+                        <i class="fas fa-plus me-2"></i>Add Category
+                    </a>
+                </div>
+                
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-family: 'Poppins', sans-serif;">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <div class="row">
+                    {% for category in categories %}
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card shadow-card rounded-card h-100 category-card" 
+                             style="border-left: 4px solid {{ category.color_code }};">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        {% if category.icon %}
+                                            <i class="{{ category.icon }} fa-2x mb-2" style="color: {{ category.color_code }};"></i>
+                                        {% endif %}
+                                        <h5 class="card-title mb-1">{{ category.name }}</h5>
+                                        <p class="card-text text-muted">{{ category.description|truncatewords:10 }}</p>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#">Edit</a></li>
+                                            <li><a class="dropdown-item" href="#">Delete</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item" href="#">View Products</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        {{ category.products.count }} products
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-12">
+                        <div class="text-center py-5">
+                            <i class="fas fa-tags fa-5x text-muted mb-3"></i>
+                            <h4 class="text-muted">No categories found</h4>
+                            <p class="text-muted">Start by creating your first product category</p>
+                            <a href="{% url 'inventory:add_category' %}" class="btn gradient-button">
+                                <i class="fas fa-plus me-2"></i>Create Category
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .category-card {
+        transition: all 0.3s ease;
+    }
+    
+    .category-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+</style>
+{% endblock %}

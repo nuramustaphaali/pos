@@ -1,0 +1,131 @@
+<!-- templates/core/edit_field.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Edit Field - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+      
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">Edit Field: {{ field.label }}</h1>
+                    <a href="{% url 'field_builder' %}" class="btn btn-outline-light">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Builder
+                    </a>
+                </div>
+                
+                <div class="card shadow-card rounded-card">
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
+                                        {{ form.category }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.field_type.id_for_label }}" class="form-label">Field Type</label>
+                                        {{ form.field_type }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.name.id_for_label }}" class="form-label">Internal Name</label>
+                                        {{ form.name }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="{{ form.label.id_for_label }}" class="form-label">Display Label</label>
+                                        {{ form.label }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.placeholder.id_for_label }}" class="form-label">Placeholder</label>
+                                {{ form.placeholder }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.help_text.id_for_label }}" class="form-label">Help Text</label>
+                                {{ form.help_text }}
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.default_value.id_for_label }}" class="form-label">Default Value</label>
+                                {{ form.default_value }}
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.required }}
+                                        <label class="form-check-label" for="{{ form.required.id_for_label }}">Required Field</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.show_on_receipt }}
+                                        <label class="form-check-label" for="{{ form.show_on_receipt.id_for_label }}">Show on Receipt</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch mb-3">
+                                        {{ form.show_on_reports }}
+                                        <label class="form-check-label" for="{{ form.show_on_reports.id_for_label }}">Show on Reports</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="{{ form.order.id_for_label }}" class="form-label">Display Order</label>
+                                {{ form.order }}
+                            </div>
+                            <div class="mb-3" id="dropdownOptionsField" style="display: none;">
+                                <label for="{{ form.dropdown_options.id_for_label }}" class="form-label">Dropdown Options (JSON Array)</label>
+                                {{ form.dropdown_options }}
+                                <small class="text-muted">e.g., ["Option 1", "Option 2", "Option 3"]</small>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{% url 'field_builder' %}" class="btn btn-outline-secondary">Cancel</a>
+                                <button type="submit" class="btn gradient-button">Update Field</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Show/hide dropdown options field based on field type
+document.addEventListener('DOMContentLoaded', function() {
+    const fieldTypeSelect = document.getElementById('{{ form.field_type.id_for_label }}');
+    const dropdownField = document.getElementById('dropdownOptionsField');
+    
+    function toggleDropdownField() {
+        if (fieldTypeSelect && dropdownField) {
+            if (fieldTypeSelect.value === 'dropdown') {
+                dropdownField.style.display = 'block';
+            } else {
+                dropdownField.style.display = 'none';
+            }
+        }
+    }
+    
+    if (fieldTypeSelect) {
+        fieldTypeSelect.addEventListener('change', toggleDropdownField);
+        toggleDropdownField(); // Initialize
+    }
+});
+</script>
+{% endblock %}
