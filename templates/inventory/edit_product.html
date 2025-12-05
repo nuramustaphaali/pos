@@ -10,6 +10,7 @@ Edit Product
 {% block content %}
 <div class="container-fluid px-0">
 
+    {# Django messages (success / error) #}
     {% if messages %}
         <div class="mb-3">
             {% for message in messages %}
@@ -18,10 +19,27 @@ Edit Product
         </div>
     {% endif %}
 
+    {# Non-field form errors #}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-3">
+            {{ form.non_field_errors }}
+        </div>
+    {% endif %}
+
+    {# DEBUG: show raw errors so we can see *anything* that goes wrong #}
+    {% if form.errors %}
+        <div class="alert alert-danger mb-3">
+            <strong>Form errors:</strong>
+            {{ form.errors }}
+        </div>
+    {% endif %}
+
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <div>
             <h5 class="mb-0">Edit Product</h5>
-            <div class="text-muted small">Updating: {{ product.name }}</div>
+            <div class="text-muted small">
+                Updating: {{ product.name }}
+            </div>
         </div>
         <div class="d-flex flex-wrap gap-2">
             <a href="{% url 'inventory:product_detail' product.id %}"
@@ -40,112 +58,50 @@ Edit Product
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
-                <!-- Basic info -->
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ form.name.id_for_label }}" class="form-label small fw-semibold">
-                            Product Name
-                        </label>
-                        {{ form.name }}
-                    </div>
-                    <div class="col-md-3">
-                        <label for="{{ form.sku.id_for_label }}" class="form-label small fw-semibold">
-                            SKU / Code
-                        </label>
-                        {{ form.sku }}
-                    </div>
-                    <div class="col-md-3">
-                        <label for="{{ form.barcode.id_for_label }}" class="form-label small fw-semibold">
-                            Barcode (optional)
-                        </label>
-                        {{ form.barcode }}
-                    </div>
-                </div>
-
-                <!-- Category + prices -->
-                <div class="row g-3 mt-3">
-                    <div class="col-md-4">
-                        <label for="{{ form.category.id_for_label }}" class="form-label small fw-semibold">
-                            Category
-                        </label>
-                        {{ form.category }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.price.id_for_label }}" class="form-label small fw-semibold">
-                            Selling Price (₦)
-                        </label>
-                        {{ form.price }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.cost_price.id_for_label }}" class="form-label small fw-semibold">
-                            Cost Price (₦)
-                        </label>
-                        {{ form.cost_price }}
-                    </div>
-                </div>
-
-                <!-- Stock -->
-                <div class="row g-3 mt-3">
-                    <div class="col-md-4">
-                        <label for="{{ form.stock_quantity.id_for_label }}" class="form-label small fw-semibold">
-                            Current Stock
-                        </label>
-                        {{ form.stock_quantity }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.minimum_stock.id_for_label }}" class="form-label small fw-semibold">
-                            Minimum Stock Alert
-                        </label>
-                        {{ form.minimum_stock }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.supplier.id_for_label }}" class="form-label small fw-semibold">
-                            Supplier (optional)
-                        </label>
-                        {{ form.supplier }}
-                    </div>
-                </div>
-
-                <!-- Description + image -->
-                <div class="row g-3 mt-3">
-                    <div class="col-md-8">
-                        <label for="{{ form.description.id_for_label }}" class="form-label small fw-semibold">
-                            Description (optional)
-                        </label>
-                        {{ form.description }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.image.id_for_label }}" class="form-label small fw-semibold">
-                            Product Image (optional)
-                        </label>
-                        <div class="mb-2">
-                            {{ form.image }}
+                    {# Render every field from ProductForm so all required fields are visible #}
+                    {% for field in form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}"
+                                   class="form-label small fw-semibold">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text small text-muted">
+                                    {{ field.help_text }}
+                                </div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="text-danger small">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
                         </div>
+                    {% endfor %}
+                </div>
 
-                        {% if product.image %}
-                            <div class="ratio ratio-4x3 mb-2">
+                {# Optional current image preview #}
+                {% if product.image %}
+                    <div class="mt-3 row">
+                        <div class="col-md-6">
+                            <div class="small text-muted mb-1">Current image:</div>
+                            <div class="ratio ratio-4x3">
                                 <img src="{{ product.image.url }}"
                                      class="img-fluid rounded"
                                      style="object-fit: cover;"
                                      alt="{{ product.name }}">
                             </div>
-                            <div class="small text-muted">
-                                Current image preview. Upload a new file to replace it.
-                            </div>
-                        {% else %}
-                            <div class="border rounded-3 d-flex align-items-center justify-content-center"
-                                 style="background: var(--sp-surface-muted); height: 160px;">
-                                <span class="small text-muted text-center">
-                                    No image uploaded yet.
-                                </span>
-                            </div>
-                        {% endif %}
+                        </div>
                     </div>
-                </div>
+                {% endif %}
 
                 <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="small text-muted">
-                        Be sure prices and stock are correct before saving.
+                        Check prices and stock before saving changes.
                     </span>
                     <div class="d-flex gap-2">
                         <a href="{% url 'inventory:product_detail' product.id %}"

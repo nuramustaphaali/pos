@@ -1,0 +1,293 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Receipt - SwiftPOS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --sp-primary: #4F46E5;
+            --sp-success: #16A34A;
+            --sp-danger: #DC2626;
+            --sp-text-main: #111827;
+            --sp-text-muted: #6B7280;
+            --sp-bg: #0f172a;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top, rgba(79,70,229,0.35), transparent 55%),
+                linear-gradient(to bottom right, #020617, #0f172a);
+            color: #E5E7EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .verify-card {
+            width: 100%;
+            max-width: 420px;
+            background: #020617;
+            border-radius: 18px;
+            box-shadow: 0 20px 40px rgba(15,23,42,0.6);
+            border: 1px solid rgba(148,163,184,0.5);
+            padding: 18px 18px 16px;
+        }
+
+        .verify-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .brand-name {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .brand-sub {
+            font-size: 9px;
+            color: #9CA3AF;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 9px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            margin-top: 8px;
+        }
+
+        .status-pill.success {
+            background: rgba(22,163,74,0.15);
+            color: #BBF7D0;
+            border: 1px solid rgba(22,163,74,0.9);
+        }
+
+        .status-pill.error {
+            background: rgba(220,38,38,0.12);
+            color: #FCA5A5;
+            border: 1px solid rgba(220,38,38,0.9);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 999px;
+            background: currentColor;
+        }
+
+        .verify-body {
+            background: radial-gradient(circle at top left, rgba(79,70,229,0.3), transparent 55%);
+            border-radius: 14px;
+            padding: 12px 12px 10px;
+            border: 1px solid rgba(30,64,175,0.7);
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 10px;
+            margin-bottom: 2px;
+        }
+
+        .row span.label {
+            color: #9CA3AF;
+        }
+
+        .row span.value {
+            font-weight: 500;
+        }
+
+        .amount-line {
+            margin-top: 4px;
+            padding-top: 4px;
+            border-top: 1px dashed rgba(148,163,184,0.6);
+            font-size: 11px;
+        }
+
+        .amount-line .value {
+            font-weight: 600;
+            font-size: 12px;
+        }
+
+        .seal-block {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .digital-seal {
+            width: 82px;
+            height: 82px;
+            border-radius: 50%;
+            border: 2px solid rgba(129,140,248,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at 30% 20%, rgba(79,70,229,0.2), transparent 55%);
+        }
+
+        .digital-seal-logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid rgba(15,23,42,0.4);
+            background: #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .digital-seal-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .digital-seal-code {
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 8px;
+            font-weight: 600;
+            padding: 1px 6px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.98);
+            color: #E5E7EB;
+            white-space: nowrap;
+        }
+
+        .note {
+            margin-top: 10px;
+            font-size: 9px;
+            color: #9CA3AF;
+            text-align: center;
+        }
+
+        .note strong {
+            color: #E5E7EB;
+        }
+
+        .footer {
+            margin-top: 10px;
+            font-size: 8.5px;
+            text-align: center;
+            color: #6B7280;
+        }
+
+        .footer span {
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+<div class="verify-card">
+    <div class="verify-header">
+        <div class="brand-name">
+            {{ system_settings.business_name|default:"SWIFTPOS" }}
+        </div>
+        {% if system_settings.business_address %}
+            <div class="brand-sub">{{ system_settings.business_address }}</div>
+        {% endif %}
+        {% if system_settings.business_phone %}
+            <div class="brand-sub">{{ system_settings.business_phone }}</div>
+        {% endif %}
+
+        {% if is_valid %}
+            <div class="status-pill success">
+                <span class="status-dot"></span>
+                <span>Receipt found · Original record</span>
+            </div>
+        {% else %}
+            <div class="status-pill error">
+                <span class="status-dot"></span>
+                <span>Receipt not found · Please check code</span>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="verify-body">
+        <div class="row">
+            <span class="label">Order number</span>
+            <span class="value">
+                {% if order %}{{ order.order_number }}{% else %}{{ order_number|default:"N/A" }}{% endif %}
+            </span>
+        </div>
+        <div class="row">
+            <span class="label">Date</span>
+            <span class="value">
+                {% if order %}{{ order.created_at|date:"Y-m-d H:i" }}{% else %}-{% endif %}
+            </span>
+        </div>
+        <div class="row">
+            <span class="label">Cashier</span>
+            <span class="value">
+                {% if order %}{{ order.cashier }}{% else %}-{% endif %}
+            </span>
+        </div>
+        <div class="row">
+            <span class="label">Payment</span>
+            <span class="value">
+                {% if order %}{{ order.get_payment_method_display }}{% else %}-{% endif %}
+            </span>
+        </div>
+
+        <div class="amount-line row">
+            <span class="label">Total paid</span>
+            <span class="value">
+                {% if order %}₦{{ order.final_amount }}{% else %}-{% endif %}
+            </span>
+        </div>
+
+        {% if verification_code %}
+            <div class="seal-block">
+                <div class="digital-seal">
+                    <div class="digital-seal-logo">
+                        <img src="{% static 'images/logo.png' %}" alt="Logo">
+                    </div>
+                    <div class="digital-seal-code">
+                        {{ verification_code }}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="note">
+        {% if order %}
+            This page confirms that this receipt exists in <strong>SwiftPOS</strong>.
+            To double-check, compare the <strong>Order No</strong> and
+            <strong>Verification Code</strong> with the printed receipt.
+        {% else %}
+            If you scanned a QR code, please make sure the URL contains the correct
+            <strong>order</strong> number.
+        {% endif %}
+    </div>
+
+    <div class="footer">
+        <span>&copy; {% now "Y" %} {{ system_settings.business_name|default:"SwiftPOS" }} · Powered by SwiftPOS</span>
+    </div>
+</div>
+</body>
+</html>

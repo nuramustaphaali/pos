@@ -6,7 +6,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-your-secret-key-here'
 DEBUG = True
-ALLOWED_HOSTS = ['arewadataplug.com.ng']
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -54,7 +54,7 @@ WSGI_APPLICATION = 'pos_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'pos_system_db',
+        'NAME': 'modern_pos_db',
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',

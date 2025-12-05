@@ -1,0 +1,1 @@
+source /home/tzyesyiz/virtualenv/pos_main/3.8/bin/activate && cd /home/tzyesyiz/pos_main

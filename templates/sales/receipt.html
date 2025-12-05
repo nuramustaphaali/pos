@@ -1,123 +1,279 @@
-<!-- templates/sales/receipt.html -->
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Receipt - {{ order.order_number }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Poppins Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
 
     <style>
+        :root {
+            --sp-primary: #4F46E5;
+            --sp-text-main: #111827;
+            --sp-text-muted: #6B7280;
+        }
+
         * {
             box-sizing: border-box;
         }
 
         body {
             margin: 0;
-            padding: 16px;
-            font-family: Arial, sans-serif;
-            background: #f3f4f6;
+            padding: 18px;
+            font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+            background: #E5E7EB;
+            font-size: 10px;
+            color: var(--sp-text-main);
         }
 
         .receipt-wrapper {
-            max-width: 360px;
+            max-width: 480px;
             margin: 0 auto;
         }
 
         .receipt {
             background: #ffffff;
             border-radius: 8px;
-            padding: 16px 16px 20px;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
-            border: 1px solid #e5e7eb;
+            padding: 16px 14px 12px;
+            box-shadow: 0 0 14px rgba(15,23,42,0.15);
+            position: relative;
+            overflow: hidden;
+            page-break-inside: avoid;
         }
 
+        /* Watermark: many repeated order numbers in background */
+        .receipt::before {
+            content:
+                "{{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }}\A"
+                "{{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }}\A"
+                "{{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }}\A"
+                "{{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }}\A"
+                "{{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }}\A"
+                "{{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }} {{ order.order_number }}";
+            position: absolute;
+            inset: -16px;
+            font-size: 18px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: rgba(148,163,184,0.09);
+            transform: rotate(-25deg);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .receipt-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
         .header {
             text-align: center;
-            border-bottom: 1px dashed #9ca3af;
-            padding-bottom: 10px;
-            margin-bottom: 10px;
+            padding-bottom: 4px;
+            border-bottom: 1px dashed #CBD5F5;
+            margin-bottom: 4px;
         }
 
         .header h1 {
             margin: 0;
-            font-size: 18px;
-            font-weight: bold;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
         }
 
         .header p {
-            margin: 2px 0;
-            font-size: 11px;
-            color: #4b5563;
+            margin: 1px 0;
+            font-size: 9px;
+            color: var(--sp-text-muted);
         }
 
+        /* Order + seal row */
+        .order-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 6px;
+            margin: 4px 0 6px;
+        }
+
+        @media (max-width: 480px) {
+            .order-header-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+
+        /* Order info (left) */
         .order-info {
-            font-size: 11px;
-            margin-bottom: 10px;
+            font-size: 9px;
         }
 
-        .order-info div {
+        .order-info-block {
             margin-bottom: 2px;
         }
 
+        .order-info-title {
+            font-weight: 500;
+        }
+
+        /* Right side: seal */
+        .order-right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* DIGITAL SEAL (logo + code) */
+        .digital-seal {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid rgba(79,70,229,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: radial-gradient(circle at 30% 20%, rgba(79,70,229,0.12), transparent 55%);
+        }
+
+        .digital-seal-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid rgba(15,23,42,0.15);
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .digital-seal-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .digital-seal-code {
+            position: absolute;
+            bottom: 3px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 7px;
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.9);
+            color: #F9FAFB;
+            white-space: nowrap;
+        }
+
+        .digital-seal-note {
+            font-size: 7.5px;
+            color: var(--sp-text-muted);
+            max-width: 200px;
+            text-align: center;
+        }
+
+        /* Section title */
         .section-title {
-            font-size: 11px;
-            font-weight: bold;
-            margin: 10px 0 4px;
-            border-bottom: 1px dashed #d1d5db;
-            padding-bottom: 2px;
+            font-size: 9px;
+            font-weight: 600;
+            margin: 6px 0 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--sp-text-muted);
+            text-align: center;
         }
 
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 11px;
-            margin-bottom: 3px;
+        /* Items table */
+        .items {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 9px;
+            page-break-inside: avoid;
         }
 
-        .item-row span:first-child {
-            max-width: 220px;
+        .items thead th {
+            text-align: left;
+            font-weight: 500;
+            padding: 3px 0;
+            border-bottom: 1px solid #E5E7EB;
         }
 
+        .items tbody td {
+            padding: 3px 0;
+            border-bottom: 1px dashed #E5E7EB;
+        }
+
+        .items tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        /* Totals */
         .totals {
-            margin-top: 8px;
-            font-size: 11px;
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px solid #E5E7EB;
+            font-size: 9px;
+            page-break-inside: avoid;
         }
 
-        .totals-row {
+        .total-line {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
-        .totals-row.total {
-            font-weight: bold;
-            border-top: 1px dashed #d1d5db;
-            margin-top: 5px;
-            padding-top: 5px;
-            font-size: 12px;
-        }
-
-        .qr-section {
-            margin-top: 12px;
-            text-align: center;
-        }
-
-        .qr-section img {
-            margin-top: 6px;
-            width: 120px;
-            height: 120px;
-        }
-
-        .footer {
-            margin-top: 12px;
-            border-top: 1px dashed #d1d5db;
-            padding-top: 8px;
-            text-align: center;
+        .total-line strong {
             font-size: 10px;
-            color: #6b7280;
         }
 
+        /* QR at bottom */
+        .qr-bottom {
+            margin-top: 6px;
+            padding-top: 4px;
+            border-top: 1px dashed #E5E7EB;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+
+        .qr-bottom img {
+            margin-top: 3px;
+            width: 70px;
+            height: 70px;
+        }
+
+        .qr-bottom .small {
+            font-size: 8px;
+            color: var(--sp-text-muted);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            font-size: 8.5px;
+            margin-top: 6px;
+            color: var(--sp-text-muted);
+            page-break-inside: avoid;
+        }
+
+        .footer p {
+            margin: 1px 0;
+        }
+
+        /* Print */
         @media print {
             body {
                 background: #ffffff;
@@ -125,91 +281,169 @@
             }
             .receipt-wrapper {
                 max-width: 100%;
-                margin: 0;
             }
             .receipt {
+                margin: 0;
                 box-shadow: none;
                 border-radius: 0;
-                border: none;
+            }
+            /* Hide note if you want more compact; comment this if you like it */
+            .digital-seal-note {
+                display: none;
             }
         }
     </style>
 </head>
 <body>
+
 <div class="receipt-wrapper">
-    <div class="receipt">
+    <div class="receipt" data-order="{{ order.order_number }}">
+        <div class="receipt-inner">
 
-        <!-- Header -->
-        <div class="header">
-            <h1>{{ system_settings.business_name|default:"MODERN POS" }}</h1>
-            {% if system_settings.business_address %}
-                <p>{{ system_settings.business_address }}</p>
-            {% endif %}
-            {% if system_settings.business_phone %}
-                <p>{{ system_settings.business_phone }}</p>
-            {% endif %}
-        </div>
-
-        <!-- Order info -->
-        <div class="order-info">
-            <div><strong>Order No:</strong> {{ order.order_number }}</div>
-            <div><strong>Date:</strong> {{ order.created_at|date:"Y-m-d H:i" }}</div>
-            <div><strong>Cashier:</strong> {{ order.cashier }}</div>
-            {% if order.customer_name %}
-                <div><strong>Customer:</strong> {{ order.customer_name }}</div>
-            {% endif %}
-            <div><strong>Payment:</strong> {{ order.get_payment_method_display }}</div>
-        </div>
-
-        <!-- Items -->
-        <div class="section-title">Items</div>
-        {% for item in order_items %}
-            <div class="item-row">
-                <span>{{ item.quantity }} x {{ item.product.name }}</span>
-                <span>₦{{ item.total_price }}</span>
+            <!-- Header -->
+            <div class="header">
+                <h1>{{ system_settings.business_name|default:"SWIFTPOS" }}</h1>
+                {% if system_settings.business_address %}
+                    <p>{{ system_settings.business_address }}</p>
+                {% endif %}
+                {% if system_settings.business_phone %}
+                    <p>{{ system_settings.business_phone }}</p>
+                {% endif %}
             </div>
-        {% endfor %}
 
-        <!-- Totals -->
-        <div class="section-title">Totals</div>
-        <div class="totals">
-            <div class="totals-row">
-                <span>Subtotal</span>
-                <span>₦{{ order.total_amount }}</span>
-            </div>
-            <div class="totals-row">
-                <span>Tax</span>
-                <span>₦{{ order.tax_amount }}</span>
-            </div>
-            <div class="totals-row total">
-                <span>Total</span>
-                <span>₦{{ order.final_amount }}</span>
-            </div>
-        </div>
+            <!-- Order + Seal row -->
+            <div class="order-header-row">
+                <!-- Left: order info -->
+                <div class="order-info">
+                    <div class="order-info-block">
+                        <span class="order-info-title">Order No:</span> {{ order.order_number }}
+                    </div>
+                    <div class="order-info-block">
+                        <span class="order-info-title">Date:</span> {{ order.created_at|date:"Y-m-d H:i" }}
+                    </div>
+                    {% if order.cashier %}
+                        <div class="order-info-block">
+                            <span class="order-info-title">Cashier:</span> {{ order.cashier }}
+                        </div>
+                    {% endif %}
+                    {% if order.customer_name %}
+                        <div class="order-info-block">
+                            <span class="order-info-title">Customer:</span> {{ order.customer_name }}
+                        </div>
+                    {% endif %}
+                    {% if order.customer_phone %}
+                        <div class="order-info-block">
+                            <span class="order-info-title">Phone:</span> {{ order.customer_phone }}
+                        </div>
+                    {% endif %}
+                </div>
 
-        <!-- QR Code -->
-        {% if qr_code %}
-        <div class="qr-section">
-            <div style="font-size:11px;">Scan to verify order</div>
-            <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
-        </div>
-        {% endif %}
+                <!-- Right: digital seal -->
+              <!---  <div class="order-right">
+                    <div class="digital-seal">
+                        <div class="digital-seal-logo">
+                            <img src="{% static 'images/logo.png' %}" alt="Logo">
+                        </div>
+                        <div id="verification-code" class="digital-seal-code">••••••••••</div>
+                    </div>
+                    <div class="digital-seal-note">
+                        Use this code with the order number to confirm inside SwiftPOS.
+                    </div>
+                </div>--->
+            </div>
 
-        <!-- Footer -->
-        <div class="footer">
-            <div>Thank you for your patronage!</div>
-            {% if system_settings.receipt_footer %}
-                <div>{{ system_settings.receipt_footer }}</div>
+            <!-- Items -->
+            <div class="section-title">Items</div>
+            <table class="items">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th class="text-right">Qty</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order_items %}
+                        <tr>
+                            <td>{{ item.product.name }}</td>
+                            <td class="text-right">{{ item.quantity }}</td>
+                            <td class="text-right">₦{{ item.total_price }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Totals -->
+            <div class="totals">
+                <div class="total-line">
+                    <span>Subtotal:</span>
+                    <span>₦{{ order.total_amount }}</span>
+                </div>
+                <div class="total-line">
+                    <span>Tax:</span>
+                    <span>₦{{ order.tax_amount }}</span>
+                </div>
+                <div class="total-line">
+                    <strong>Total:</strong>
+                    <strong>₦{{ order.final_amount }}</strong>
+                </div>
+                <div class="total-line">
+                    <span>Payment:</span>
+                    <span>{{ order.get_payment_method_display }}</span>
+                </div>
+            </div>
+
+            <!-- QR at bottom -->
+            {% if qr_code %}
+                <div class="qr-bottom">
+                    <!---<div class="small">Scan to verify / view details</div>--->
+                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+                </div>
             {% endif %}
-        </div>
 
+            <!-- Footer -->
+            <div class="footer">
+                <p>Thank you for your patronage!</p>
+                {% if system_settings.receipt_footer %}
+                    <p>{{ system_settings.receipt_footer }}</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
-    window.onload = function () {
-        window.print();
-    };
+    // JS verification code (deterministic from order data)
+    function generateVerificationCode() {
+        const orderNumber = "{{ order.order_number }}";
+        const createdAt = "{{ order.created_at|date:'YmdHis' }}";
+        const business = "{{ system_settings.business_name|default:''|escapejs }}";
+
+        const raw = orderNumber + "|" + createdAt + "|" + business;
+
+        let hash = 0 >>> 0;
+        for (let i = 0; i < raw.length; i++) {
+            hash = (hash * 31 + raw.charCodeAt(i)) >>> 0;
+        }
+
+        let code = hash.toString(36).toUpperCase();
+        if (code.length < 8) code = code.padStart(8, "0");
+        code = code.slice(-8);
+        return "SP-" + code.slice(0, 4) + "-" + code.slice(4);
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const el = document.getElementById("verification-code");
+        if (el) {
+            el.textContent = generateVerificationCode();
+        }
+
+        // Slight delay to ensure everything is rendered before print
+        setTimeout(function () {
+            window.print();
+        }, 300);
+    });
 </script>
+
 </body>
 </html>

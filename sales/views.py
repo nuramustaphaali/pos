@@ -13,7 +13,9 @@ from inventory.models import Product
 from core.models import SystemSettings, CustomField, DynamicFormData
 from .models import POSOrder, POSOrderItem, PaymentTransaction, SaleSummary, DailySalesSummary, UnusualTransaction
 from .forms import POSOrderForm, POSOrderItemForm
-
+import qrcode
+import base64
+from io import BytesIO
 # sales/views.py (FIXED - Corrected decimal/float operations)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -203,19 +205,122 @@ def pos_sales(request):
     return render(request, 'sales/pos_sales.html', context)
 
 
+from core.models import SystemSettings, CustomField, DynamicFormData
+from .models import POSOrder, POSOrderItem, PaymentTransaction, SaleSummary, DailySalesSummary, UnusualTransaction
+
+
+import string  # if not already at the top
+
+BASE36_ALPHABET = string.digits + string.ascii_lowercase
+
+
+def _to_base36(num: int) -> str:
+    """Convert positive int to base36 (same as JS toString(36))."""
+    if num == 0:
+        return "0"
+    result = ""
+    while num > 0:
+        num, rem = divmod(num, 36)
+        result = BASE36_ALPHABET[rem] + result
+    return result
+
+
+def generate_verification_code(order: POSOrder, system_settings: SystemSettings = None) -> str:
+    """
+    Generate the same verification code as the JS on the receipt template.
+    Raw string: order_number | created_at(YmdHis) | business_name
+    Hash: 32-bit int, multiplied by 31 each step, base36, padded to 8, SP-XXXX-XXXX.
+    """
+    if system_settings is None:
+        system_settings = SystemSettings.objects.first()
+
+    business_name = system_settings.business_name if system_settings else ""
+    created_str = order.created_at.strftime("%Y%m%d%H%M%S")
+
+    raw = f"{order.order_number}|{created_str}|{business_name}"
+
+    # Same hashing approach as JS
+    h = 0
+    for ch in raw:
+        h = (h * 31 + ord(ch)) & 0xFFFFFFFF  # 32-bit
+
+    code = _to_base36(h).upper()
+    code = code.rjust(8, "0")[-8:]  # pad to 8, keep last 8
+    return f"SP-{code[:4]}-{code[4:]}"
+    
+    
+    
+
+from django.utils import timezone  # already imported earlier in your file
+
+def verify_order(request):
+    """
+    Public verification page for QR scans.
+    URL: /sales/verify-order/?order=<order_number>
+    """
+    order_number = request.GET.get("order", "").strip()
+    system_settings = SystemSettings.objects.first()
+
+    order = None
+    verification_code = None
+    is_valid = False
+
+    if order_number:
+        order = POSOrder.objects.filter(order_number=order_number).first()
+        if order:
+            verification_code = generate_verification_code(order, system_settings)
+            is_valid = True
+
+    context = {
+        "order_number": order_number,
+        "order": order,
+        "verification_code": verification_code,
+        "is_valid": is_valid,
+        "system_settings": system_settings,
+    }
+    return render(request, "sales/verify_order.html", context)
+
+
+
+
 @login_required
 def print_receipt(request, order_id):
-    """Print receipt for completed order"""
+    """Print HTML receipt (with QR) for completed order"""
     order = get_object_or_404(POSOrder, id=order_id)
     order_items = POSOrderItem.objects.filter(order=order).select_related('product')
-    
+
     # Get system settings for receipt
     system_settings = SystemSettings.objects.first()
-    
+
+    # --- Generate QR code for HTML receipt ---
+    qr_code_b64 = None
+    try:
+        # If you have a real verify view, better: reverse('sales:verify_order') + querystring
+        qr_data = request.build_absolute_uri(
+            f"/sales/verify-order/?order={order.order_number}"
+        )
+
+        qr = qrcode.QRCode(
+            version=1,
+            box_size=4,   # smaller boxes so it fits nicely in the 90x90px area
+            border=1,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+        qr_code_b64 = base64.b64encode(buffer.getvalue()).decode("ascii")
+    except Exception as e:
+        # Optional: log instead of print in production
+        print("QR generation error:", e)
+
     context = {
         'order': order,
         'order_items': order_items,
         'system_settings': system_settings,
+        'qr_code': qr_code_b64,  # 👈 now template can use this
         'user_role': request.user.role,
         'user_name': request.user.get_full_name() or request.user.username,
     }
@@ -683,311 +788,3 @@ def generate_receipt_with_qr(request, order_id):
 
     buffer.seek(0)
     return HttpResponse(buffer.getvalue(), content_type='application/pdf')
-
-
-
-# sales/views.py (add these new functions)
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from django.db import transaction
-from datetime import datetime, timedelta
-import pandas as pd
-import json
-from io import BytesIO
-import csv
-from .models import POSOrder, POSOrderItem, TransactionHistory, BulkImportLog, DailyLimitSettings, DailyOrderCount
-from inventory.models import Product
-from accounts.models import CustomUser
-
-@login_required
-def bulk_import(request):
-    """Handle bulk import of products"""
-    if request.method == 'POST':
-        import_type = request.POST.get('import_type', 'products')
-        uploaded_file = request.FILES.get('file')
-        
-        if not uploaded_file:
-            messages.error(request, 'Please select a file to upload')
-            return redirect('sales:bulk_import')
-        
-        # Check file extension
-        if not uploaded_file.name.lower().endswith(('.xlsx', '.xls', '.csv')):
-            messages.error(request, 'Please upload an Excel or CSV file')
-            return redirect('sales:bulk_import')
-        
-        try:
-            # Create import log
-            import_log = BulkImportLog.objects.create(
-                import_type=import_type,
-                file_name=uploaded_file.name,
-                total_records=0,
-                imported_by=request.user.username,
-                status='processing'
-            )
-            
-            if import_type == 'products':
-                # Handle product import
-                df = pd.read_excel(uploaded_file) if uploaded_file.name.endswith(('.xlsx', '.xls')) else pd.read_csv(uploaded_file)
-                
-                successful_count = 0
-                failed_count = 0
-                errors = []
-                
-                for index, row in df.iterrows():
-                    try:
-                        # Generate SKU if not provided
-                        sku = row.get('sku', f"PROD{timezone.now().strftime('%Y%m%d')}{index+1}")
-                        
-                        # Create product
-                        product = Product.objects.create(
-                            name=row['name'],
-                            sku=sku,
-                            price=row['selling_price'],
-                            cost_price=row.get('cost_price', 0),
-                            stock_quantity=row.get('stock_quantity', 0),
-                            minimum_stock=row.get('minimum_stock', 10),
-                            unit_of_measure=row.get('unit_of_measure', 'pcs'),
-                            status='active'
-                        )
-                        successful_count += 1
-                    except Exception as e:
-                        failed_count += 1
-                        errors.append(f"Row {index + 1}: {str(e)}")
-                
-                # Update import log
-                import_log.successful_records = successful_count
-                import_log.failed_records = failed_count
-                import_log.total_records = successful_count + failed_count
-                import_log.error_log = json.dumps(errors)
-                import_log.status = 'completed'
-                import_log.save()
-                
-                messages.success(request, f'Import completed: {successful_count} successful, {failed_count} failed')
-            
-            return redirect('sales:bulk_import')
-            
-        except Exception as e:
-            messages.error(request, f'Error importing file: {str(e)}')
-            return redirect('sales:bulk_import')
-    
-    # Get recent import logs
-    recent_imports = BulkImportLog.objects.filter(
-        imported_by=request.user.username
-    ).order_by('-created_at')[:5]
-    
-    context = {
-        'recent_imports': recent_imports,
-        'user_role': request.user.role,
-        'user_name': request.user.get_full_name() or request.user.username,
-    }
-    return render(request, 'sales/bulk_import.html', context)
-
-@login_required
-def bulk_export(request):
-    """Handle bulk export of data"""
-    export_type = request.GET.get('type', 'yesterday')
-    date_str = request.GET.get('date', '')
-    
-    if export_type == 'yesterday':
-        target_date = timezone.now().date() - timedelta(days=1)
-    elif date_str:
-        try:
-            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            target_date = timezone.now().date()
-    else:
-        target_date = timezone.now().date()
-    
-    if export_type == 'transactions':
-        # Export transactions for specific date
-        transactions = POSOrder.objects.filter(
-            created_at__date=target_date,
-            status='completed'
-        ).order_by('-created_at')
-        
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="transactions_{target_date}.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow([
-            'Order Number', 'Date', 'Cashier', 'Payment Method', 
-            'Total Amount', 'Customer Name', 'Customer Phone', 'Items'
-        ])
-        
-        for order in transactions:
-            # Get items as string
-            items_str = ', '.join([f"{item.quantity}x {item.product.name}" for item in order.items.all()])
-            writer.writerow([
-                order.order_number,
-                order.created_at.strftime('%Y-%m-%d %H:%M'),
-                order.cashier,
-                order.get_payment_method_display(),
-                order.final_amount,
-                order.customer_name or '',
-                order.customer_phone or '',
-                items_str
-            ])
-        
-        return response
-    
-    elif export_type == 'products':
-        # Export all products
-        products = Product.objects.all()
-        
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = 'attachment; filename="products_export.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow([
-            'Name', 'SKU', 'Barcode', 'Price', 'Cost Price', 
-            'Stock Quantity', 'Minimum Stock', 'Unit of Measure', 'Status'
-        ])
-        
-        for product in products:
-            writer.writerow([
-                product.name,
-                product.sku,
-                product.barcode or '',
-                product.price,
-                product.cost_price or '',
-                product.stock_quantity,
-                product.minimum_stock,
-                product.unit_of_measure,
-                product.status
-            ])
-        
-        return response
-    
-    return redirect('sales:transaction_history')
-
-@login_required
-def transaction_history(request):
-    """View all transactions by date"""
-    # Get unique dates with transactions
-    dates_with_transactions = POSOrder.objects.filter(
-        status='completed'
-    ).dates('created_at', 'day').order_by('-date')
-    
-    # Get transactions for selected date
-    selected_date_str = request.GET.get('date', '')
-    if selected_date_str:
-        try:
-            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
-            transactions = POSOrder.objects.filter(
-                created_at__date=selected_date,
-                status='completed'
-            ).order_by('-created_at')
-        except ValueError:
-            selected_date = timezone.now().date()
-            transactions = POSOrder.objects.filter(
-                created_at__date=selected_date,
-                status='completed'
-            ).order_by('-created_at')
-    else:
-        selected_date = timezone.now().date()
-        transactions = POSOrder.objects.filter(
-            created_at__date=selected_date,
-            status='completed'
-        ).order_by('-created_at')
-    
-    # Apply filters
-    payment_method = request.GET.get('payment_method', '')
-    cashier = request.GET.get('cashier', '')
-    customer = request.GET.get('customer', '')
-    
-    if payment_method:
-        transactions = transactions.filter(payment_method=payment_method)
-    
-    if cashier:
-        transactions = transactions.filter(cashier__icontains=cashier)
-    
-    if customer:
-        transactions = transactions.filter(customer_name__icontains=customer)
-    
-    context = {
-        'dates_with_transactions': dates_with_transactions,
-        'transactions': transactions,
-        'selected_date': selected_date,
-        'payment_method': payment_method,
-        'cashier': cashier,
-        'customer': customer,
-        'user_role': request.user.role,
-        'user_name': request.user.get_full_name() or request.user.username,
-    }
-    return render(request, 'sales/transaction_history.html', context)
-
-@login_required
-def print_transaction_receipt(request, order_id):
-    """Print receipt for specific transaction"""
-    order = get_object_or_404(POSOrder, id=order_id)
-    order_items = POSOrderItem.objects.filter(order=order).select_related('product')
-    
-    # Get system settings
-    from core.models import SystemSettings
-    system_settings = SystemSettings.objects.first()
-    
-    context = {
-        'order': order,
-        'order_items': order_items,
-        'system_settings': system_settings,
-        'user_role': request.user.role,
-        'user_name': request.user.get_full_name() or request.user.username,
-    }
-    return render(request, 'sales/receipt.html', context)
-
-@login_required
-def daily_limits(request):
-    """Manage daily limits for users"""
-    if request.method == 'POST':
-        user_id = request.POST.get('user_id')
-        daily_order_limit = request.POST.get('daily_order_limit', 50)
-        daily_sales_limit = request.POST.get('daily_sales_limit', 50000)
-        
-        user = get_object_or_404(CustomUser, id=user_id)
-        
-        limit_setting, created = DailyLimitSettings.objects.get_or_create(
-            user=user,
-            defaults={
-                'daily_order_limit': int(daily_order_limit),
-                'daily_sales_limit': float(daily_sales_limit)
-            }
-        )
-        
-        if not created:
-            limit_setting.daily_order_limit = int(daily_order_limit)
-            limit_setting.daily_sales_limit = float(daily_sales_limit)
-            limit_setting.save()
-        
-        messages.success(request, f'Daily limits updated for {user.username}')
-        return redirect('sales:daily_limits')
-    
-    # Get all users
-    users = CustomUser.objects.all()
-    
-    # Get current limits
-    user_limits = {}
-    for user in users:
-        try:
-            limits = DailyLimitSettings.objects.get(user=user)
-            user_limits[user.id] = {
-                'daily_order_limit': limits.daily_order_limit,
-                'daily_sales_limit': limits.daily_sales_limit
-            }
-        except DailyLimitSettings.DoesNotExist:
-            user_limits[user.id] = {
-                'daily_order_limit': 50,
-                'daily_sales_limit': 50000
-            }
-    
-    context = {
-        'users': users,
-        'user_limits': user_limits,
-        'user_role': request.user.role,
-        'user_name': request.user.get_full_name() or request.user.username,
-    }
-    return render(request, 'sales/daily_limits.html', context)
-

@@ -10,11 +10,19 @@ Add Product
 {% block content %}
 <div class="container-fluid px-0">
 
+    {# Django messages #}
     {% if messages %}
         <div class="mb-3">
             {% for message in messages %}
                 <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
             {% endfor %}
+        </div>
+    {% endif %}
+
+    {# Non-field form errors #}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger mb-3">
+            {{ form.non_field_errors }}
         </div>
     {% endif %}
 
@@ -34,100 +42,35 @@ Add Product
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
-                <!-- Basic info -->
                 <div class="row g-3">
-                    <div class="col-md-6">
-                        <label for="{{ form.name.id_for_label }}" class="form-label small fw-semibold">
-                            Product Name
-                        </label>
-                        {{ form.name }}
-                    </div>
-                    <div class="col-md-3">
-                        <label for="{{ form.sku.id_for_label }}" class="form-label small fw-semibold">
-                            SKU / Code
-                        </label>
-                        {{ form.sku }}
-                    </div>
-                    <div class="col-md-3">
-                        <label for="{{ form.barcode.id_for_label }}" class="form-label small fw-semibold">
-                            Barcode (optional)
-                        </label>
-                        {{ form.barcode }}
-                    </div>
-                </div>
-
-                <!-- Category + prices -->
-                <div class="row g-3 mt-3">
-                    <div class="col-md-4">
-                        <label for="{{ form.category.id_for_label }}" class="form-label small fw-semibold">
-                            Category
-                        </label>
-                        {{ form.category }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.price.id_for_label }}" class="form-label small fw-semibold">
-                            Selling Price (₦)
-                        </label>
-                        {{ form.price }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.cost_price.id_for_label }}" class="form-label small fw-semibold">
-                            Cost Price (₦)
-                        </label>
-                        {{ form.cost_price }}
-                    </div>
-                </div>
-
-                <!-- Stock -->
-                <div class="row g-3 mt-3">
-                    <div class="col-md-4">
-                        <label for="{{ form.stock_quantity.id_for_label }}" class="form-label small fw-semibold">
-                            Current Stock
-                        </label>
-                        {{ form.stock_quantity }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.minimum_stock.id_for_label }}" class="form-label small fw-semibold">
-                            Minimum Stock Alert
-                        </label>
-                        {{ form.minimum_stock }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.supplier.id_for_label }}" class="form-label small fw-semibold">
-                            Supplier (optional)
-                        </label>
-                        {{ form.supplier }}
-                    </div>
-                </div>
-
-                <!-- Description + image -->
-                <div class="row g-3 mt-3">
-                    <div class="col-md-8">
-                        <label for="{{ form.description.id_for_label }}" class="form-label small fw-semibold">
-                            Description (optional)
-                        </label>
-                        {{ form.description }}
-                    </div>
-                    <div class="col-md-4">
-                        <label for="{{ form.image.id_for_label }}" class="form-label small fw-semibold">
-                            Product Image (optional)
-                        </label>
-                        <div class="mb-2">
-                            {{ form.image }}
+                    {# Render every field from ProductForm so no required field is hidden #}
+                    {% for field in form %}
+                        <div class="col-md-6">
+                            <label for="{{ field.id_for_label }}"
+                                   class="form-label small fw-semibold">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+                            {{ field }}
+                            {% if field.help_text %}
+                                <div class="form-text small text-muted">
+                                    {{ field.help_text }}
+                                </div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="text-danger small">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
                         </div>
-                        <div class="border rounded-3 d-flex align-items-center justify-content-center"
-                             style="background: var(--sp-surface-muted); height: 160px;">
-                            <span class="small text-muted text-center">
-                                Image preview will show on product page.<br>
-                                Leave empty if you do not have an image.
-                            </span>
-                        </div>
-                    </div>
+                    {% endfor %}
                 </div>
 
                 <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <span class="small text-muted">
-                        Fields marked as optional can be filled later.
+                        Make sure all required fields (*) are filled correctly.
                     </span>
                     <div class="d-flex gap-2">
                         <a href="{% url 'inventory:product_list' %}"

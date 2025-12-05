@@ -705,3 +705,21 @@ body.sidebar-mobile-open .swiftpos-overlay {
         transform: translateY(-8px);
     }
 }
+/* Lock page scroll when mobile sidebar is open */
+
+
+/* Mobile tables: fixed layout so long text doesn't stretch the page */
+@media (max-width: 575.98px) {
+    table {
+        table-layout: fixed !important;
+        width: 100% !important;
+    }
+
+    table th,
+    table td {
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        font-size: 0.8rem !important;
+    }
+}
