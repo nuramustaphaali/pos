@@ -1,0 +1,133 @@
+<!-- templates/sales/transaction_history.html -->
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block title %}Transaction History - Modern POS{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 sidebar-gradient">
+            {% include 'partials/sidebar.html' %}
+        </div>
+        
+        <div class="col-md-9">
+            <div class="p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="gradient-text">Transaction History</h1>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'sales:bulk_export' %}?type=transactions&date={{ selected_date|date:'Y-m-d' }}">Export Today's Transactions</a></li>
+                            <li><a class="dropdown-item" href="{% url 'sales:bulk_export' %}?type=transactions">Export All Transactions</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Filters -->
+                <div class="card shadow-card rounded-card mb-4">
+                    <div class="card-body">
+                        <form method="get" class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Date</label>
+                                <select class="form-control gradient-select" name="date" onchange="this.form.submit()">
+                                    {% for date in dates_with_transactions %}
+                                    <option value="{{ date|date:'Y-m-d' }}" {% if selected_date == date %}selected{% endif %}>
+                                        {{ date|date:"M d, Y" }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Payment Method</label>
+                                <select class="form-control gradient-select" name="payment_method">
+                                    <option value="">All Methods</option>
+                                    <option value="cash" {% if payment_method == 'cash' %}selected{% endif %}>Cash</option>
+                                    <option value="transfer" {% if payment_method == 'transfer' %}selected{% endif %}>Transfer</option>
+                                    <option value="pos" {% if payment_method == 'pos' %}selected{% endif %}>POS</option>
+                                    <option value="mobile_money" {% if payment_method == 'mobile_money' %}selected{% endif %}>Mobile Money</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cashier</label>
+                                <input type="text" class="form-control gradient-input" 
+                                       name="cashier" value="{{ cashier }}" 
+                                       placeholder="Search cashier...">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Customer</label>
+                                <input type="text" class="form-control gradient-input" 
+                                       name="customer" value="{{ customer }}" 
+                                       placeholder="Search customer...">
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Transactions for Selected Date -->
+                <div class="card shadow-card rounded-card">
+                    <div class="card-header bg-white border-0">
+                        <h5 class="gradient-text mb-0">
+                            Transactions for {{ selected_date|date:"F d, Y" }} 
+                            <span class="badge bg-primary ms-2">{{ transactions|length }}</span>
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Order #</th>
+                                        <th>Time</th>
+                                        <th>Cashier</th>
+                                        <th>Payment Method</th>
+                                        <th>Amount</th>
+                                        <th>Customer</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for transaction in transactions %}
+                                    <tr>
+                                        <td>{{ transaction.order_number }}</td>
+                                        <td>{{ transaction.created_at|date:"H:i" }}</td>
+                                        <td>{{ transaction.cashier }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ transaction.payment_method }}">
+                                                {{ transaction.get_payment_method_display }}
+                                            </span>
+                                        </td>
+                                        <td class="text-success fw-bold">₦{{ transaction.final_amount }}</td>
+                                        <td>{{ transaction.customer_name|default:"-" }}</td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{% url 'sales:print_transaction_receipt' transaction.id %}" 
+                                                   class="btn btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-print"></i>
+                                                </a>
+                                                <a href="#" class="btn btn-outline-info" title="View Details">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">
+                                            <i class="fas fa-receipt fa-3x mb-3"></i>
+                                            <p>No transactions found for this date</p>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

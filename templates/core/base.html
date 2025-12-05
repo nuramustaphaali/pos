@@ -85,6 +85,12 @@
                     <span class="label">POS Terminal</span>
                 </a>
 
+                <a href="{% url 'sales:transaction_history' %}"
+                   class="sidebar-link {% if current_url_name == 'transaction_history %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-cash-register"></i></span>
+                    <span class="label">Transactions</span>
+                </a>
+
                 <a href="{% url 'sales:daily_dashboard' %}"
                    class="sidebar-link {% if current_url_name == 'daily_dashboard' %}active{% endif %}">
                     <span class="icon"><i class="fas fa-chart-line"></i></span>
@@ -117,6 +123,18 @@
                    class="sidebar-link {% if current_url_name == 'product_list' %}active{% endif %}">
                     <span class="icon"><i class="fas fa-box"></i></span>
                     <span class="label">Products</span>
+                </a>
+
+                <a href="{% url 'sales:bulk_import' %}"
+                   class="sidebar-link {% if current_url_name == 'bulk_import %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-cash-register"></i></span>
+                    <span class="label">Import Data</span>
+                </a>
+
+                <a href="{% url 'sales:bulk_export' %}"
+                   class="sidebar-link {% if current_url_name == 'bulk_export %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-cash-register"></i></span>
+                    <span class="label">Export Data</span>
                 </a>
 
                 <a href="{% url 'inventory:category_list' %}"
@@ -245,6 +263,19 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <!-- SIDEBAR SCRIPT -->
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const toasts = document.querySelectorAll('.swiftpos-toast');
+    toasts.forEach((toast) => {
+        setTimeout(() => {
+            toast.style.animation = 'toast-out 0.25s ease-in forwards';
+            setTimeout(() => toast.remove(), 250);
+        }, 2000); // 2 seconds
+    });
+});
+</script>
+
 <script>
 (function () {
     const sidebar = document.getElementById("swiftposSidebar");

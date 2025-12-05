@@ -53,7 +53,7 @@ def pos_sales(request):
             total_amount=0,
             final_amount=0,
             cashier=request.user.username,
-            payment_method='cash'
+            payment_method='pos'
         )
         request.session['current_order_id'] = order.id
         print(f"DEBUG: Created new order {order.id}")
@@ -164,7 +164,7 @@ def pos_sales(request):
         
         elif action == 'complete_order':
             # Get payment method and reference from form
-            payment_method = request.POST.get('payment_method', 'cash')
+            payment_method = request.POST.get('payment_method', 'pos')
             reference_number = request.POST.get('reference_number', '')
             customer_name = request.POST.get('customer_name', '')
             customer_phone = request.POST.get('customer_phone', '')
@@ -276,33 +276,68 @@ from datetime import timedelta
 from django.db.models import Sum, Count
 from .models import POSOrder, SaleSummary
 
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from datetime import timedelta
-from django.db.models import Sum, Count
-from .models import POSOrder, SaleSummary
-
 @login_required
 def payment_summary(request):
     """
     Payment summary view for displaying analytics and sales data.
+    This function dynamically generates summaries for today and the last 7 days.
     """
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.db.models import Sum, Count
+
     # Get today's date
     today = timezone.now().date()
 
-    # Fetch or generate today's summary using SaleSummary model
-    today_summary = SaleSummary.objects.filter(date=today).first()
-    if not today_summary:
-        # Generate summary for today if it doesn't exist
-        today_summary = SaleSummary.generate_summary(today)
+    # Generate today's summary
+    today_orders = POSOrder.objects.filter(created_at__date=today, status='completed')
+    today_summary_data = {
+        'date': today,
+        'total_sales': today_orders.aggregate(total=Sum('final_amount'))['total'] or 0,
+        'total_transactions': today_orders.count(),
+    }
 
-    # Fetch recent summaries (last 7 days)
+    # Calculate method-specific totals for today
+    for method in ['pos', 'transfer', 'cash', 'mobile_money']:
+        method_orders = today_orders.filter(payment_method=method)
+        today_summary_data[f'{method}_sales'] = method_orders.aggregate(
+            total=Sum('final_amount')
+        )['total'] or 0
+        today_summary_data[f'{method}_transactions'] = method_orders.count()
+
+    # Save or update today's summary in the database
+    today_summary, created = SaleSummary.objects.update_or_create(
+        date=today,
+        defaults=today_summary_data
+    )
+
+    # Generate summaries for the last 7 days
     recent_dates = [today - timedelta(days=i) for i in range(7)]
+    recent_summaries = []
     for date in recent_dates:
-        if not SaleSummary.objects.filter(date=date).exists():
-            SaleSummary.generate_summary(date)
+        orders = POSOrder.objects.filter(created_at__date=date, status='completed')
+        summary_data = {
+            'date': date,
+            'total_sales': orders.aggregate(total=Sum('final_amount'))['total'] or 0,
+            'total_transactions': orders.count(),
+        }
 
+        # Calculate method-specific totals for each day
+        for method in ['pos', 'transfer', 'cash', 'mobile_money']:
+            method_orders = orders.filter(payment_method=method)
+            summary_data[f'{method}_sales'] = method_orders.aggregate(
+                total=Sum('final_amount')
+            )['total'] or 0
+            summary_data[f'{method}_transactions'] = method_orders.count()
+
+        # Save or update the summary in the database
+        summary, _ = SaleSummary.objects.update_or_create(
+            date=date,
+            defaults=summary_data
+        )
+        recent_summaries.append(summary)
+
+    # Fetch recent summaries (last 7 days) for display
     recent_summaries = SaleSummary.objects.filter(
         date__gte=today - timedelta(days=7)
     ).order_by('-date')
@@ -328,15 +363,16 @@ def payment_summary(request):
 
     # Context dictionary with detailed explanation of each variable
     context = {
-        'summary': today_summary,  # Contains totals like total_sales, cash_sales, pos_sales, etc.
+        'summary': today_summary,  # Today's summary
         'today_summary': today_summary,  # Duplicate for template consistency
-        'recent_summaries': recent_summaries,  # List of SaleSummary objects for the last 7 days
-        'payment_methods': payment_methods,  # List of payment methods with totals, counts, and percentages
-        'user_role': request.user.role,  # Role of the logged-in user (e.g., admin, cashier)
-        'user_name': request.user.get_full_name() or request.user.username,  # Full name or username of the logged-in user
+        'recent_summaries': recent_summaries,  # Last 7 days' summaries
+        'payment_methods': payment_methods,  # Payment method distribution
+        'user_role': request.user.role,  # User role (e.g., admin, cashier)
+        'user_name': request.user.get_full_name() or request.user.username,  # User name
     }
 
     return render(request, 'sales/payment_summary.html', context)
+    
     
 # sales/views.py (FINAL - Complete working version)
 from django.shortcuts import render, redirect, get_object_or_404
@@ -385,7 +421,7 @@ def daily_dashboard(request):
     summary.total_transactions = orders.count()
     
     # Calculate method-specific totals
-    for method in ['cash', 'transfer', 'pos', 'mobile_money']:
+    for method in ['pos', 'transfer', 'cash', 'mobile_money']:
         method_orders = orders.filter(payment_method=method)
         summary_data = method_orders.aggregate(total=Sum('final_amount'), count=Count('id'))
         setattr(summary, f'{method}_revenue', summary_data['total'] or 0)
@@ -452,7 +488,7 @@ def yesterday_summary(request):
     summary.total_transactions = orders.count()
     
     # Calculate method-specific totals
-    for method in ['cash', 'transfer', 'pos', 'mobile_money']:
+    for method in ['pos', 'transfer', 'cash', 'mobile_money']:
         method_orders = orders.filter(payment_method=method)
         summary_data = method_orders.aggregate(total=Sum('final_amount'), count=Count('id'))
         setattr(summary, f'{method}_revenue', summary_data['total'] or 0)
@@ -647,3 +683,311 @@ def generate_receipt_with_qr(request, order_id):
 
     buffer.seek(0)
     return HttpResponse(buffer.getvalue(), content_type='application/pdf')
+
+
+
+# sales/views.py (add these new functions)
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from django.db import transaction
+from datetime import datetime, timedelta
+import pandas as pd
+import json
+from io import BytesIO
+import csv
+from .models import POSOrder, POSOrderItem, TransactionHistory, BulkImportLog, DailyLimitSettings, DailyOrderCount
+from inventory.models import Product
+from accounts.models import CustomUser
+
+@login_required
+def bulk_import(request):
+    """Handle bulk import of products"""
+    if request.method == 'POST':
+        import_type = request.POST.get('import_type', 'products')
+        uploaded_file = request.FILES.get('file')
+        
+        if not uploaded_file:
+            messages.error(request, 'Please select a file to upload')
+            return redirect('sales:bulk_import')
+        
+        # Check file extension
+        if not uploaded_file.name.lower().endswith(('.xlsx', '.xls', '.csv')):
+            messages.error(request, 'Please upload an Excel or CSV file')
+            return redirect('sales:bulk_import')
+        
+        try:
+            # Create import log
+            import_log = BulkImportLog.objects.create(
+                import_type=import_type,
+                file_name=uploaded_file.name,
+                total_records=0,
+                imported_by=request.user.username,
+                status='processing'
+            )
+            
+            if import_type == 'products':
+                # Handle product import
+                df = pd.read_excel(uploaded_file) if uploaded_file.name.endswith(('.xlsx', '.xls')) else pd.read_csv(uploaded_file)
+                
+                successful_count = 0
+                failed_count = 0
+                errors = []
+                
+                for index, row in df.iterrows():
+                    try:
+                        # Generate SKU if not provided
+                        sku = row.get('sku', f"PROD{timezone.now().strftime('%Y%m%d')}{index+1}")
+                        
+                        # Create product
+                        product = Product.objects.create(
+                            name=row['name'],
+                            sku=sku,
+                            price=row['selling_price'],
+                            cost_price=row.get('cost_price', 0),
+                            stock_quantity=row.get('stock_quantity', 0),
+                            minimum_stock=row.get('minimum_stock', 10),
+                            unit_of_measure=row.get('unit_of_measure', 'pcs'),
+                            status='active'
+                        )
+                        successful_count += 1
+                    except Exception as e:
+                        failed_count += 1
+                        errors.append(f"Row {index + 1}: {str(e)}")
+                
+                # Update import log
+                import_log.successful_records = successful_count
+                import_log.failed_records = failed_count
+                import_log.total_records = successful_count + failed_count
+                import_log.error_log = json.dumps(errors)
+                import_log.status = 'completed'
+                import_log.save()
+                
+                messages.success(request, f'Import completed: {successful_count} successful, {failed_count} failed')
+            
+            return redirect('sales:bulk_import')
+            
+        except Exception as e:
+            messages.error(request, f'Error importing file: {str(e)}')
+            return redirect('sales:bulk_import')
+    
+    # Get recent import logs
+    recent_imports = BulkImportLog.objects.filter(
+        imported_by=request.user.username
+    ).order_by('-created_at')[:5]
+    
+    context = {
+        'recent_imports': recent_imports,
+        'user_role': request.user.role,
+        'user_name': request.user.get_full_name() or request.user.username,
+    }
+    return render(request, 'sales/bulk_import.html', context)
+
+@login_required
+def bulk_export(request):
+    """Handle bulk export of data"""
+    export_type = request.GET.get('type', 'yesterday')
+    date_str = request.GET.get('date', '')
+    
+    if export_type == 'yesterday':
+        target_date = timezone.now().date() - timedelta(days=1)
+    elif date_str:
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            target_date = timezone.now().date()
+    else:
+        target_date = timezone.now().date()
+    
+    if export_type == 'transactions':
+        # Export transactions for specific date
+        transactions = POSOrder.objects.filter(
+            created_at__date=target_date,
+            status='completed'
+        ).order_by('-created_at')
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = f'attachment; filename="transactions_{target_date}.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Order Number', 'Date', 'Cashier', 'Payment Method', 
+            'Total Amount', 'Customer Name', 'Customer Phone', 'Items'
+        ])
+        
+        for order in transactions:
+            # Get items as string
+            items_str = ', '.join([f"{item.quantity}x {item.product.name}" for item in order.items.all()])
+            writer.writerow([
+                order.order_number,
+                order.created_at.strftime('%Y-%m-%d %H:%M'),
+                order.cashier,
+                order.get_payment_method_display(),
+                order.final_amount,
+                order.customer_name or '',
+                order.customer_phone or '',
+                items_str
+            ])
+        
+        return response
+    
+    elif export_type == 'products':
+        # Export all products
+        products = Product.objects.all()
+        
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="products_export.csv"'
+        
+        writer = csv.writer(response)
+        writer.writerow([
+            'Name', 'SKU', 'Barcode', 'Price', 'Cost Price', 
+            'Stock Quantity', 'Minimum Stock', 'Unit of Measure', 'Status'
+        ])
+        
+        for product in products:
+            writer.writerow([
+                product.name,
+                product.sku,
+                product.barcode or '',
+                product.price,
+                product.cost_price or '',
+                product.stock_quantity,
+                product.minimum_stock,
+                product.unit_of_measure,
+                product.status
+            ])
+        
+        return response
+    
+    return redirect('sales:transaction_history')
+
+@login_required
+def transaction_history(request):
+    """View all transactions by date"""
+    # Get unique dates with transactions
+    dates_with_transactions = POSOrder.objects.filter(
+        status='completed'
+    ).dates('created_at', 'day').order_by('-date')
+    
+    # Get transactions for selected date
+    selected_date_str = request.GET.get('date', '')
+    if selected_date_str:
+        try:
+            selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d').date()
+            transactions = POSOrder.objects.filter(
+                created_at__date=selected_date,
+                status='completed'
+            ).order_by('-created_at')
+        except ValueError:
+            selected_date = timezone.now().date()
+            transactions = POSOrder.objects.filter(
+                created_at__date=selected_date,
+                status='completed'
+            ).order_by('-created_at')
+    else:
+        selected_date = timezone.now().date()
+        transactions = POSOrder.objects.filter(
+            created_at__date=selected_date,
+            status='completed'
+        ).order_by('-created_at')
+    
+    # Apply filters
+    payment_method = request.GET.get('payment_method', '')
+    cashier = request.GET.get('cashier', '')
+    customer = request.GET.get('customer', '')
+    
+    if payment_method:
+        transactions = transactions.filter(payment_method=payment_method)
+    
+    if cashier:
+        transactions = transactions.filter(cashier__icontains=cashier)
+    
+    if customer:
+        transactions = transactions.filter(customer_name__icontains=customer)
+    
+    context = {
+        'dates_with_transactions': dates_with_transactions,
+        'transactions': transactions,
+        'selected_date': selected_date,
+        'payment_method': payment_method,
+        'cashier': cashier,
+        'customer': customer,
+        'user_role': request.user.role,
+        'user_name': request.user.get_full_name() or request.user.username,
+    }
+    return render(request, 'sales/transaction_history.html', context)
+
+@login_required
+def print_transaction_receipt(request, order_id):
+    """Print receipt for specific transaction"""
+    order = get_object_or_404(POSOrder, id=order_id)
+    order_items = POSOrderItem.objects.filter(order=order).select_related('product')
+    
+    # Get system settings
+    from core.models import SystemSettings
+    system_settings = SystemSettings.objects.first()
+    
+    context = {
+        'order': order,
+        'order_items': order_items,
+        'system_settings': system_settings,
+        'user_role': request.user.role,
+        'user_name': request.user.get_full_name() or request.user.username,
+    }
+    return render(request, 'sales/receipt.html', context)
+
+@login_required
+def daily_limits(request):
+    """Manage daily limits for users"""
+    if request.method == 'POST':
+        user_id = request.POST.get('user_id')
+        daily_order_limit = request.POST.get('daily_order_limit', 50)
+        daily_sales_limit = request.POST.get('daily_sales_limit', 50000)
+        
+        user = get_object_or_404(CustomUser, id=user_id)
+        
+        limit_setting, created = DailyLimitSettings.objects.get_or_create(
+            user=user,
+            defaults={
+                'daily_order_limit': int(daily_order_limit),
+                'daily_sales_limit': float(daily_sales_limit)
+            }
+        )
+        
+        if not created:
+            limit_setting.daily_order_limit = int(daily_order_limit)
+            limit_setting.daily_sales_limit = float(daily_sales_limit)
+            limit_setting.save()
+        
+        messages.success(request, f'Daily limits updated for {user.username}')
+        return redirect('sales:daily_limits')
+    
+    # Get all users
+    users = CustomUser.objects.all()
+    
+    # Get current limits
+    user_limits = {}
+    for user in users:
+        try:
+            limits = DailyLimitSettings.objects.get(user=user)
+            user_limits[user.id] = {
+                'daily_order_limit': limits.daily_order_limit,
+                'daily_sales_limit': limits.daily_sales_limit
+            }
+        except DailyLimitSettings.DoesNotExist:
+            user_limits[user.id] = {
+                'daily_order_limit': 50,
+                'daily_sales_limit': 50000
+            }
+    
+    context = {
+        'users': users,
+        'user_limits': user_limits,
+        'user_role': request.user.role,
+        'user_name': request.user.get_full_name() or request.user.username,
+    }
+    return render(request, 'sales/daily_limits.html', context)
+
