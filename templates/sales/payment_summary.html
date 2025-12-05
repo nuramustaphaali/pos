@@ -1,165 +1,227 @@
-<!-- templates/sales/payment_summary.html -->
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Payment Summary - Modern POS{% endblock %}
+{% block title %}Payment Summary - SwiftPOS{% endblock %}
+
+{% block topbar_title %}
+Payment Summary
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-       
-        
-        <div class="col-md-9">
-            <div class="p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="gradient-text">Payment Summary</h1>
-                    <div class="btn-group">
-                        <button class="btn btn-outline-light" onclick="printSummary()">
-                            <i class="fas fa-print me-2"></i>Print
-                        </button>
-                        <button class="btn gradient-button" onclick="exportToPDF()">
-                            <i class="fas fa-file-pdf me-2"></i>Export PDF
-                        </button>
+<div class="container-fluid px-0">
+
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-2" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Top summary cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Total Sales</div>
+                        <div class="price mt-1">₦{{ summary.total_sales|default:0|floatformat:2 }}</div>
+                        <div class="small text-muted">
+                            {{ summary.total_transactions|default:0 }} transaction{{ summary.total_transactions|default:0|pluralize }}
+                        </div>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:42px;height:42px;background:rgba(79,70,229,.08);color:var(--sp-primary);">
+                        <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
-                
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <!-- Today's Summary -->
-                {% if today_summary %}
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card gradient-card shadow-card rounded-card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-shopping-cart fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">{{ today_summary.total_transactions }}</h4>
-                                <small class="text-white-50">Total Transactions</small>
-                            </div>
-                        </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Cash</div>
+                        <div class="h5 mb-1">₦{{ summary.cash_sales|default:0|floatformat:2 }}</div>
+                        <div class="small text-muted">Cash collected</div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card gradient-card shadow-card rounded-card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-coins fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">₦{{ today_summary.total_sales|floatformat:2 }}</h4>
-                                <small class="text-white-50">Total Sales</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-gradient-success shadow-card rounded-card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-cash-register fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">{{ today_summary.cash_transactions }}</h4>
-                                <small class="text-white-50">Cash Sales</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-gradient-info shadow-card rounded-card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-credit-card fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">{{ today_summary.pos_transactions }}</h4>
-                                <small class="text-white-50">POS Sales</small>
-                            </div>
-                        </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:42px;height:42px;background:rgba(22,163,74,.12);color:var(--sp-success);">
+                        <i class="fas fa-money-bill-wave"></i>
                     </div>
                 </div>
-                {% endif %}
-                
-                <!-- Payment Method Distribution -->
-                <div class="card shadow-card rounded-card mb-4">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="gradient-text mb-0"><i class="fas fa-chart-pie me-2"></i>Payment Method Distribution</h5>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">POS / Card</div>
+                        <div class="h5 mb-1">₦{{ summary.pos_sales|default:0|floatformat:2 }}</div>
+                        <div class="small text-muted">Card / POS</div>
                     </div>
-                    <div class="card-body">
-                        {% if payment_methods %}
-                        <div class="row">
-                            {% for method in payment_methods %}
-                            <div class="col-md-3">
-                                <div class="text-center mb-3">
-                                    <div class="payment-method-chart" style="width: 100px; height: 100px; margin: 0 auto; border-radius: 50%; background: conic-gradient(
-                                        #667eea 0% {{ method.total|floatformat:2 }}%,
-                                        #764ba2 {{ method.total|floatformat:2 }}% 100%
-                                    );">
-                                        <div class="text-white" style="position: relative; top: 50%; transform: translateY(-50%);">
-                                            {{ method.total|floatformat:2 }}%
-                                        </div>
-                                    </div>
-                                    <h6 class="mt-2">{{ method.get_payment_method_display }}</h6>
-                                    <p class="mb-0">₦{{ method.total|floatformat:2 }}</p>
-                                    <small>{{ method.count }} transactions</small>
-                                </div>
-                            </div>
-                            {% endfor %}
-                        </div>
-                        {% else %}
-                        <p class="text-muted text-center">No payment data available for today.</p>
-                        {% endif %}
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:42px;height:42px;background:rgba(96,165,250,.12);color:var(--sp-primary-soft);">
+                        <i class="fas fa-credit-card"></i>
                     </div>
                 </div>
-                
-                <!-- Recent Summaries -->
-                <div class="card shadow-card rounded-card">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="gradient-text mb-0"><i class="fas fa-history me-2"></i>Recent Daily Summaries</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Transactions</th>
-                                        <th>Total Sales</th>
-                                        <th>Cash</th>
-                                        <th>POS</th>
-                                        <th>Transfer</th>
-                                        <th>Mobile Money</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for summary in recent_summaries %}
-                                    <tr>
-                                        <td>{{ summary.date|date:"M d, Y" }}</td>
-                                        <td>{{ summary.total_transactions }}</td>
-                                        <td class="text-success">₦{{ summary.total_sales|floatformat:2 }}</td>
-                                        <td>₦{{ summary.cash_sales|floatformat:2 }}</td>
-                                        <td>₦{{ summary.pos_sales|floatformat:2 }}</td>
-                                        <td>₦{{ summary.transfer_sales|floatformat:2 }}</td>
-                                        <td>₦{{ summary.mobile_money_sales|floatformat:2 }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted">No summary data available.</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Transfer + Mobile</div>
+                        <div class="h6 mb-1">₦{{ summary.transfer_sales|default:0|floatformat:2 }}</div>
+                        <div class="small text-muted">
+                            Mobile: ₦{{ summary.mobile_money_sales|default:0|floatformat:2 }}
                         </div>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:42px;height:42px;background:rgba(59,130,246,.12);color:var(--sp-info);">
+                        <i class="fas fa-university"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Today highlight -->
+    {% if today_summary %}
+    <div class="card mb-3 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                <i class="fas fa-calendar-day"></i> Today Overview
+            </h6>
+            <span class="small text-muted">
+                {{ today_summary.total_transactions|default:0 }} transaction{{ today_summary.total_transactions|default:0|pluralize }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3 text-center" style="background:var(--sp-surface-muted);">
+                        <div class="small text-muted mb-1">Total Sales</div>
+                        <div class="fw-semibold">₦{{ today_summary.total_sales|default:0|floatformat:2 }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3 text-center" style="background:var(--sp-surface-muted);">
+                        <div class="small text-muted mb-1">Cash</div>
+                        <div class="fw-semibold">{{ today_summary.cash_transactions|default:0 }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3 text-center" style="background:var(--sp-surface-muted);">
+                        <div class="small text-muted mb-1">POS</div>
+                        <div class="fw-semibold">{{ today_summary.pos_transactions|default:0 }}</div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="p-3 rounded-3 text-center" style="background:var(--sp-surface-muted);">
+                        <div class="small text-muted mb-1">Transactions</div>
+                        <div class="fw-semibold">{{ today_summary.total_transactions|default:0 }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body text-center">
+                <p class="text-muted small mb-0">No summary available for today.</p>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Payment method distribution -->
+    <div class="card mb-3 shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                <i class="fas fa-chart-pie"></i> Payment Method Distribution
+            </h6>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();">
+                <i class="fas fa-print me-1"></i> Print
+            </button>
+        </div>
+        <div class="card-body">
+            {% if payment_methods %}
+                <div class="row g-3">
+                    {% for method in payment_methods %}
+                        <div class="col-12 col-sm-6 col-lg-3">
+                            <div class="p-3 rounded-3 h-100 text-center" style="background:var(--sp-surface-muted);">
+                                <div class="fw-semibold mb-1">
+                                    {{ method.display_name }}
+                                </div>
+                                <div class="small text-muted mb-1">
+                                    {{ method.count|default:0 }} transaction{{ method.count|default:0|pluralize }}
+                                </div>
+                                <div class="h6 mb-1">₦{{ method.total|default:0|floatformat:2 }}</div>
+                                <div class="small text-muted">
+                                    {{ method.percentage|default:0 }}% of total
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">No payment data available for this period.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Recent daily summaries -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                <i class="fas fa-history"></i> Recent Daily Summaries
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="font-size: 10px; !important">
+                <table class="table align-middle mb-0 table-hover" style="font-size: 10px; !important">
+                    <thead  style="font-size: 10px; !important">
+                        <tr>
+                            <th>Date</th>
+                            <th>Total Sales</th>
+                            <th>Breakdown</th>
+                            <th>Transactions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if recent_summaries %}
+                            {% for summary in recent_summaries %}
+                                <tr>
+                                    <td>{{ summary.date|date:"M d, Y" }}</td>
+                                    <td class="text-success">₦{{ summary.total_sales|default:0|floatformat:2 }}</td>
+                                    <td>
+                                        <div class="small text-muted">
+                                            Cash: ₦{{ summary.cash_sales|default:0|floatformat:2 }},
+                                            POS: ₦{{ summary.pos_sales|default:0|floatformat:2 }},
+                                            Transfer: ₦{{ summary.transfer_sales|default:0|floatformat:2 }},
+                                            Mobile: ₦{{ summary.mobile_money_sales|default:0|floatformat:2 }}
+                                        </div>
+                                    </td>
+                                    <td>{{ summary.total_transactions|default:0 }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted small py-3">
+                                    No recent summaries to display.
+                                </td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function printSummary() {
-    window.print();
-}
-
-function exportToPDF() {
-    alert('PDF export functionality would be implemented here');
-}
-</script>
 {% endblock %}

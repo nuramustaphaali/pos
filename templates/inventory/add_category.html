@@ -1,69 +1,68 @@
-<!-- templates/inventory/add_category.html -->
+{# templates/inventory/add_category.html #}
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Add Category - Modern POS{% endblock %}
+{% block title %}Add Category - SwiftPOS{% endblock %}
+
+{% block topbar_title %}
+Add Category
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-      
-        <div class="col-md-12">
-            <div class="p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="gradient-text">Add Product Category</h1>
-                    <a href="{% url 'inventory:category_list' %}" class="btn btn-outline-light">
-                        <i class="fas fa-arrow-left me-2"></i>Back to Categories
-                    </a>
-                </div>
-                
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-family: 'Poppins', sans-serif;">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <div class="card shadow-card rounded-card">
-                    <div class="card-body">
-                        <form method="post">
-                            {% csrf_token %}
-                            <div class="mb-3">
-                                <label for="{{ form.name.id_for_label }}" class="form-label">Category Name</label>
-                                {{ form.name }}
-                            </div>
-                            <div class="mb-3">
-                                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
-                                {{ form.description }}
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.color_code.id_for_label }}" class="form-label">Color Code</label>
-                                        {{ form.color_code }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.icon.id_for_label }}" class="form-label">Icon (Font Awesome)</label>
-                                        {{ form.icon }}
-                                        <small class="text-muted">e.g., fa-box, fa-user, fa-cash-register</small>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="d-flex justify-content-end gap-2">
-                                <a href="{% url 'inventory:category_list' %}" class="btn btn-outline-secondary">Cancel</a>
-                                <button type="submit" class="btn gradient-button">
-                                    <i class="fas fa-save me-2"></i>Add Category
-                                </button>
-                            </div>
-                        </form>
+<div class="container-fluid px-0">
+
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h5 class="mb-0">Add New Category</h5>
+            <div class="text-muted small">
+                Organise products into groups like "Snacks", "Drinks", or "Clothes".
+            </div>
+        </div>
+        <a href="{% url 'inventory:category_list' %}"
+           class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+            <i class="fas fa-list"></i> Categories
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.name.id_for_label }}" class="form-label small fw-semibold">
+                            Category Name
+                        </label>
+                        {{ form.name }}
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.description.id_for_label }}" class="form-label small fw-semibold">
+                            Description (optional)
+                        </label>
+                        {{ form.description }}
                     </div>
                 </div>
-            </div>
+
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <a href="{% url 'inventory:category_list' %}"
+                       class="btn btn-outline-secondary btn-sm">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="btn btn-primary btn-sm d-flex align-items-center gap-2">
+                        <i class="fas fa-save"></i> Save category
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>

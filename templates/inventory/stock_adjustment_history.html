@@ -1,169 +1,212 @@
-<!-- templates/inventory/stock_adjustment_history.html -->
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Stock Adjustment History - Modern POS{% endblock %}
+{% block title %}Stock History - SwiftPOS{% endblock %}
+
+{% block topbar_title %}
+Inventory - Stock History
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-      
-        
-        <div class="col-md-9">
-            <div class="p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="gradient-text">Stock Adjustment History</h1>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-light" onclick="printHistory()">
-                            <i class="fas fa-print me-2"></i>Print
-                        </button>
-                        <button class="btn btn-outline-light" onclick="exportToCSV()">
-                            <i class="fas fa-file-export me-2"></i>Export
-                        </button>
-                    </div>
+<div class="container-fluid px-0">
+
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-2" role="alert">
+                    {{ message }}
                 </div>
-                
-                <!-- Filters -->
-                <div class="card shadow-card rounded-card mb-4">
-                    <div class="card-body">
-                        <form method="get" class="row g-3">
-                            <div class="col-md-4">
-                                <select name="product" class="form-control gradient-select">
-                                    <option value="">All Products</option>
-                                    {% for product in products %}
-                                    <option value="{{ product.id }}" {% if selected_product == product.id|stringformat:"s" %}selected{% endif %}>
-                                        {{ product.name }} ({{ product.sku }})
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <select name="type" class="form-control gradient-select">
-                                    <option value="">All Types</option>
-                                    <option value="restock" {% if selected_type == 'restock' %}selected{% endif %}>Restock</option>
-                                    <option value="reduce" {% if selected_type == 'reduce' %}selected{% endif %}>Reduce</option>
-                                    <option value="adjustment" {% if selected_type == 'adjustment' %}selected{% endif %}>Adjustment</option>
-                                    <option value="damage" {% if selected_type == 'damage' %}selected{% endif %}>Damage</option>
-                                    <option value="return" {% if selected_type == 'return' %}selected{% endif %}>Return</option>
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <input type="date" name="date_from" class="form-control gradient-input" placeholder="From date">
-                            </div>
-                            <div class="col-md-2">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-filter"></i> Filter
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-                
-                <!-- History Table -->
-                <div class="card shadow-card rounded-card">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Product</th>
-                                        <th>Type</th>
-                                        <th>Quantity</th>
-                                        <th>Reason</th>
-                                        <th>Performed By</th>
-                                        <th>Reference</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for adjustment in page_obj %}
-                                    <tr>
-                                        <td>{{ adjustment.created_at|date:"M d, Y H:i" }}</td>
-                                        <td>
-                                            <div>{{ adjustment.product.name }}</div>
-                                            <small class="text-muted">{{ adjustment.product.sku }}</small>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-{{ adjustment.adjustment_type }}">
-                                                {{ adjustment.get_adjustment_type_display }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="{% if adjustment.adjustment_type in 'restock,return' %}text-success{% else %}text-danger{% endif %}">
-                                                {% if adjustment.adjustment_type in 'restock,return' %}+{% else %}-{% endif %}{{ adjustment.quantity }}
-                                            </span>
-                                        </td>
-                                        <td>{{ adjustment.reason|truncatewords:10 }}</td>
-                                        <td>{{ adjustment.performed_by }}</td>
-                                        <td>{{ adjustment.reference_number|default:"-" }}</td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted py-5">
-                                            <i class="fas fa-history fa-3x mb-3"></i>
-                                            <h5>No stock adjustments found</h5>
-                                            <p>Stock adjustments will appear here once created</p>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                        
-                        <!-- Pagination -->
-                        {% if page_obj.has_other_pages %}
-                        <nav aria-label="Page navigation">
-                            <ul class="pagination justify-content-center">
-                                {% if page_obj.has_previous %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&product={{ selected_product }}&type={{ selected_type }}">Previous</a>
-                                    </li>
-                                {% endif %}
-                                
-                                {% for num in page_obj.paginator.page_range %}
-                                    {% if page_obj.number == num %}
-                                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                                        <li class="page-item">
-                                            <a class="page-link" href="?page={{ num }}&product={{ selected_product }}&type={{ selected_type }}">{{ num }}</a>
-                                        </li>
-                                    {% endif %}
-                                {% endfor %}
-                                
-                                {% if page_obj.has_next %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&product={{ selected_product }}&type={{ selected_type }}">Next</a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </nav>
-                        {% endif %}
-                    </div>
-                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h5 class="mb-0">Stock Adjustment History</h5>
+            <div class="text-muted small">
+                Track all restocks, reductions, and manual corrections.
             </div>
+        </div>
+        <div>
+            <a href="{% url 'inventory:product_list' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+                <i class="fas fa-box"></i> Back to products
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <form method="get" class="card mb-3">
+        <div class="card-body row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">Product</label>
+                <select name="product" class="form-select">
+                    <option value="">All Products</option>
+                    {% for product in products %}
+                        <option value="{{ product.id }}" {% if selected_product|add:""|slugify == product.id|slugify %}selected{% endif %}>
+                            {{ product.name }} ({{ product.sku }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">Type</label>
+                <select name="type" class="form-select">
+                    <option value="">All</option>
+                    <option value="restock" {% if selected_type == 'restock' %}selected{% endif %}>Restock</option>
+                    <option value="reduce" {% if selected_type == 'reduce' %}selected{% endif %}>Reduce</option>
+                    <option value="adjustment" {% if selected_type == 'adjustment' %}selected{% endif %}>Manual Adjustment</option>
+                    <option value="damage" {% if selected_type == 'damage' %}selected{% endif %}>Damage/Loss</option>
+                    <option value="return" {% if selected_type == 'return' %}selected{% endif %}>Return to Stock</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold">User</label>
+                <input type="text"
+                       name="user"
+                       value="{{ request.GET.user }}"
+                       class="form-control"
+                       placeholder="Username">
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100 btn-sm">
+                    <i class="fas fa-search me-1"></i> Filter
+                </button>
+                <a href="{% url 'inventory:stock_adjustment_history' %}" class="btn btn-outline-secondary btn-sm">
+                    Reset
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <!-- History table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Product</th>
+                        <th class="d-none d-md-table-cell">SKU</th>
+                        <th class="text-center">Type</th>
+                        <th class="text-end">Change</th>
+                        <th class="text-end d-none d-lg-table-cell">Before</th>
+                        <th class="text-end d-none d-lg-table-cell">After</th>
+                        <th class="d-none d-md-table-cell">By</th>
+                        <th class="d-none d-xl-table-cell">Reason</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% if page_obj %}
+                        {% for adj in page_obj %}
+                            <tr>
+                                <td>
+                                    <div class="small">
+                                        {{ adj.created_at|date:"Y-m-d" }}
+                                    </div>
+                                    <div class="text-muted small">
+                                        {{ adj.created_at|time:"H:i" }}
+                                    </div>
+                                </td>
+                                <td>
+                                    {{ adj.product.name }}
+                                </td>
+                                <td class="d-none d-md-table-cell">
+                                    <span class="small text-muted">
+                                        {{ adj.product.sku }}
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    {% if adj.adjustment_type == 'restock' %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            Restock
+                                        </span>
+                                    {% elif adj.adjustment_type == 'reduce' %}
+                                        <span class="badge bg-danger text-light">
+                                            Reduce
+                                        </span>
+                                    {% elif adj.adjustment_type == 'adjustment' %}
+                                        <span class="badge bg-info text-light">
+                                            Manual Adjustment
+                                        </span>
+                                    {% elif adj.adjustment_type == 'damage' %}
+                                        <span class="badge bg-warning text-dark">
+                                            Damage/Loss
+                                        </span>
+                                    {% elif adj.adjustment_type == 'return' %}
+                                        <span class="badge bg-primary text-light">
+                                            Return to Stock
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if adj.quantity > 0 %}
+                                        <span class="text-success">+{{ adj.quantity }}</span>
+                                    {% else %}
+                                        <span class="text-danger">{{ adj.quantity }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end d-none d-lg-table-cell">
+                                    {{ adj.product.stock_quantity|add:"-adj.quantity" }}
+                                </td>
+                                <td class="text-end d-none d-lg-table-cell">
+                                    {{ adj.product.stock_quantity }}
+                                </td>
+                                <td class="d-none d-md-table-cell">
+                                    <span class="small text-muted">
+                                        {{ adj.performed_by|default:"-" }}
+                                    </span>
+                                </td>
+                                <td class="d-none d-xl-table-cell">
+                                    <span class="small text-muted">
+                                        {{ adj.reason|default:"-" }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted small py-4">
+                                No stock adjustments recorded.
+                            </td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            {% if page_obj.has_other_pages %}
+                <div class="px-3 py-2 border-top d-flex justify-content-between align-items-center small">
+                    <span>
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Prev</a>
+                                </li>
+                            {% endif %}
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if num == page_obj.number %}
+                                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_css %}
-<style>
-    .bg-restock { background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important; }
-    .bg-reduce { background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%) !important; }
-    .bg-adjustment { background: linear-gradient(135deg, #6f42c1 0%, #6610f2 100%) !important; }
-    .bg-damage { background: linear-gradient(135deg, #fd7e14 0%, #e74c3c 100%) !important; }
-    .bg-return { background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%) !important; }
-</style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function printHistory() {
-    window.print();
-}
-
-function exportToCSV() {
-    alert('CSV export functionality would be implemented here');
-}
-</script>
 {% endblock %}

@@ -1,243 +1,234 @@
-<!-- templates/sales/yesterday_summary.html (FIXED) -->
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Yesterday's Summary - Modern POS{% endblock %}
+{% block title %}Yesterday Summary - SwiftPOS{% endblock %}
+
+{% block topbar_title %}
+Yesterday Summary
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-      
-        
-        <div class="col-md-9">
-            <div class="p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="gradient-text">Yesterday's Sales Summary</h1>
-                    <div class="btn-group">
-                        <a href="?export=csv" class="btn btn-outline-light">
-                            <i class="fas fa-file-csv me-2"></i>Export CSV
-                        </a>
-                        <button class="btn gradient-button" onclick="printSummary()">
-                            <i class="fas fa-print me-2"></i>Print
-                        </button>
+<div class="container-fluid px-0">
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} mb-2">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Top summary cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Total Revenue</div>
+                        <div class="price mt-1">₦{{ summary.total_revenue|floatformat:2 }}</div>
+                        <div class="small text-muted">
+                            {{ summary.total_transactions }} transaction{{ summary.total_transactions|pluralize }}
+                        </div>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:42px;height:42px;background:rgba(79,70,229,.08);color:var(--sp-primary);">
+                        <i class="fas fa-coins"></i>
                     </div>
                 </div>
-                
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <!-- Yesterday's Summary Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card gradient-card shadow-card rounded-card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-coins fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">₦{{ summary.total_revenue|floatformat:2 }}</h4>
-                                <small class="text-white-50">Total Revenue</small>
-                            </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Cash</div>
+                        <div class="h5 mb-1">₦{{ summary.cash_revenue|floatformat:2 }}</div>
+                        <div class="small text-muted">
+                            {{ summary.cash_transactions }} cash txn
                         </div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card gradient-card shadow-card rounded-card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-shopping-cart fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">{{ summary.total_transactions }}</h4>
-                                <small class="text-white-50">Total Transactions</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-gradient-success shadow-card rounded-card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-cash-register fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">₦{{ summary.cash_revenue|floatformat:2 }}</h4>
-                                <small class="text-white-50">Cash Revenue</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card bg-gradient-info shadow-card rounded-card text-center">
-                            <div class="card-body">
-                                <i class="fas fa-credit-card fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">₦{{ summary.pos_revenue|floatformat:2 }}</h4>
-                                <small class="text-white-50">POS Revenue</small>
-                            </div>
-                        </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:42px;height:42px;background:rgba(22,163,74,.12);color:var(--sp-success);">
+                        <i class="fas fa-money-bill-wave"></i>
                     </div>
                 </div>
-                
-                <!-- Filters -->
-                <div class="card shadow-card rounded-card mb-4">
-                    <div class="card-body">
-                        <form method="get" class="row g-3">
-                            <div class="col-md-4">
-                                <select name="payment_method" class="form-control gradient-select">
-                                    <option value="">All Payment Methods</option>
-                                    <option value="cash" {% if payment_method == 'cash' %}selected{% endif %}>Cash</option>
-                                    <option value="transfer" {% if payment_method == 'transfer' %}selected{% endif %}>Transfer</option>
-                                    <option value="pos" {% if payment_method == 'pos' %}selected{% endif %}>POS</option>
-                                    <option value="mobile_money" {% if payment_method == 'mobile_money' %}selected{% endif %}>Mobile Money</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <input type="number" name="min_amount" class="form-control gradient-input" 
-                                       placeholder="Minimum amount" value="{{ min_amount }}">
-                            </div>
-                            <div class="col-md-2">
-                                <button type="submit" class="btn btn-primary w-100">
-                                    <i class="fas fa-filter"></i> Filter
-                                </button>
-                            </div>
-                            <div class="col-md-2">
-                                <a href="{% url 'sales:yesterday_summary' %}" class="btn btn-outline-secondary w-100">
-                                    <i class="fas fa-times"></i> Clear
-                                </a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-                
-                <!-- Payment Breakdown -->
-                <div class="card shadow-card rounded-card mb-4">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="gradient-text mb-0"><i class="fas fa-chart-bar me-2"></i>Payment Method Breakdown</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="text-center p-3 rounded" style="background: rgba(40, 167, 69, 0.1);">
-                                    <i class="fas fa-money-bill-wave fa-2x text-success mb-2"></i>
-                                    <h5 class="text-success mb-1">₦{{ summary.cash_revenue|floatformat:2 }}</h5>
-                                    <small class="text-muted">Cash ({{ summary.cash_transactions }})</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="text-center p-3 rounded" style="background: rgba(0, 123, 255, 0.1);">
-                                    <i class="fas fa-exchange-alt fa-2x text-primary mb-2"></i>
-                                    <h5 class="text-primary mb-1">₦{{ summary.transfer_revenue|floatformat:2 }}</h5>
-                                    <small class="text-muted">Transfer ({{ summary.transfer_transactions }})</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="text-center p-3 rounded" style="background: rgba(111, 66, 193, 0.1);">
-                                    <i class="fas fa-credit-card fa-2x text-primary mb-2"></i>
-                                    <h5 class="text-primary mb-1">₦{{ summary.pos_revenue|floatformat:2 }}</h5>
-                                    <small class="text-muted">POS ({{ summary.pos_transactions }})</small>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="text-center p-3 rounded" style="background: rgba(253, 126, 20, 0.1);">
-                                    <i class="fas fa-mobile-alt fa-2x text-warning mb-2"></i>
-                                    <h5 class="text-warning mb-1">₦{{ summary.mobile_money_revenue|floatformat:2 }}</h5>
-                                    <small class="text-muted">Mobile Money ({{ summary.mobile_money_transactions }})</small>
-                                </div>
-                            </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">POS / Card</div>
+                        <div class="h5 mb-1">₦{{ summary.pos_revenue|floatformat:2 }}</div>
+                        <div class="small text-muted">
+                            {{ summary.pos_transactions }} POS txn
                         </div>
                     </div>
-                </div>
-                
-                <!-- Unusual Transactions -->
-                {% if unusual_transactions %}
-                <div class="card shadow-card rounded-card mb-4">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="gradient-text mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Unusual Transactions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Order</th>
-                                        <th>Amount</th>
-                                        <th>Payment Method</th>
-                                        <th>Reason</th>
-                                        <th>Flagged By</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for unusual in unusual_transactions %}
-                                    <tr class="table-warning">
-                                        <td>{{ unusual.order.order_number }}</td>
-                                        <td class="text-success">₦{{ unusual.order.final_amount }}</td>
-                                        <td>{{ unusual.order.get_payment_method_display }}</td>
-                                        <td>{{ unusual.reason }}</td>
-                                        <td>{{ unusual.flagged_by }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ unusual.resolved|yesno:'success,warning' }}">
-                                                {{ unusual.resolved|yesno:'Resolved,Pending' }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:42px;height:42px;background:rgba(96,165,250,.12);color:var(--sp-primary-soft);">
+                        <i class="fas fa-credit-card"></i>
                     </div>
                 </div>
-                {% endif %}
-                
-                <!-- Yesterday's Orders -->
-                <div class="card shadow-card rounded-card">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="gradient-text mb-0"><i class="fas fa-receipt me-2"></i>Yesterday's Orders</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Order #</th>
-                                        <th>Time</th>
-                                        <th>Cashier</th>
-                                        <th>Payment Method</th>
-                                        <th>Amount</th>
-                                        <th>Customer</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for order in yesterday_orders %}
-                                    <tr>
-                                        <td>{{ order.order_number }}</td>
-                                        <td>{{ order.created_at|date:"H:i" }}</td>
-                                        <td>{{ order.cashier }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ order.payment_method }}">
-                                                {{ order.get_payment_method_display }}
-                                            </span>
-                                        </td>
-                                        <td class="text-success">₦{{ order.final_amount }}</td>
-                                        <td>{{ order.customer_name|default:"-" }}</td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{% url 'sales:print_receipt' order.id %}" class="btn btn-outline-primary" target="_blank">
-                                                    <i class="fas fa-print"></i>
-                                                </a>
-                                                <a href="{% url 'sales:repeat_sale' order.id %}" class="btn btn-outline-success" title="Repeat Sale">
-                                                    <i class="fas fa-redo"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    {% empty %}
-                                    <tr>
-                                        <td colspan="7" class="text-center text-muted">No orders recorded yesterday</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Transfer + Mobile</div>
+                        <div class="h6 mb-1">₦{{ summary.transfer_revenue|floatformat:2 }}</div>
+                        <div class="small text-muted">
+                            Mobile: ₦{{ summary.mobile_money_revenue|floatformat:2 }}
                         </div>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:42px;height:42px;background:rgba(59,130,246,.12);color:var(--sp-info);">
+                        <i class="fas fa-university"></i>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Unusual transactions -->
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                <i class="fas fa-triangle-exclamation"></i> Unusual Transactions
+            </h6>
+            <span class="small text-muted">
+                Orders above ₦{{ min_amount|floatformat:2 }} or flagged manually.
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="font-size: 8px !important">
+                <table class="table align-middle mb-0 table-hover" style="font-size: 8px !important">
+                    <thead>
+                    <tr>
+                        <th>Order Details</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% if unusual_transactions %}
+                        {% for unusual in unusual_transactions %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold small">
+                                        <a href="{% url 'sales:print_receipt' unusual.order.id %}" class="text-decoration-none text-primary">
+                                            {{ unusual.order.order_number }}
+                                        </a>
+                                    </div>
+                                    <div class="text-muted small">
+                                        {{ unusual.order.created_at|date:"Y-m-d H:i" }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        Payment: {{ unusual.order.get_payment_method_display }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        Flagged By: {{ unusual.flagged_by|default:"-" }}
+                                    </div>
+                                </td>
+                                <td>
+                                    ₦{{ unusual.order.final_amount|floatformat:2 }}
+                                </td>
+                                <td>
+                                    {% if unusual.resolved %}
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">
+                                            Resolved
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">
+                                            Pending
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted small py-3">
+                                No unusual transactions flagged for yesterday.
+                            </td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Yesterday orders list -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                <i class="fas fa-list"></i> Yesterday Orders
+            </h6>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="window.print();">
+                <i class="fas fa-print me-1"></i> Print
+            </button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="font-size: 10px !important">
+                <table class="table align-middle mb-0 table-hover" style="font-size: 10px !important">
+                    <thead>
+                    <tr>
+                        <th>Order Details</th>
+                        <!--<th>Customer</th>-->
+                        <th>Amount</th>
+                        <th>Cashier</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% if yesterday_orders %}
+                        {% for order in yesterday_orders %}
+                            <tr>
+                               <td>
+                                    <div class="fw-semibold small">
+                                        <a href="{% url 'sales:print_receipt' order.id %}" class="text-decoration-none text-primary">
+                                            {{ order.order_number }}
+                                        </a>
+                                    </div>
+                                    <div class="text-muted small">
+                                        {{ order.created_at|date:"Y-m-d H:i" }}
+                                    </div>
+                                    <div class="small text-muted">
+                                        Payment: {{ order.get_payment_method_display }}
+                                    </div>
+                                </td>
+                                <!--<td>-->
+                                <!--    {{ order.customer_name|default:"Walk-in" }}-->
+                                <!--</td>-->
+                                <td class="text-end">
+                                    ₦{{ order.final_amount|floatformat:2 }}
+                                </td>
+                                <td>
+                                    {{ order.cashier }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted small py-3">
+                                No orders were found for yesterday.
+                            </td>
+                        </tr>
+                    {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
 </div>
 {% endblock %}

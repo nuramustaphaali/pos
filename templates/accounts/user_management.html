@@ -2,59 +2,131 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}User Management - Modern POS{% endblock %}
+{% block title %}User Management - SwiftPOS{% endblock %}
+
+{% block topbar_title %}
+User Management
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-       
-        
-        <div class="col-md-9">
-            <div class="p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="gradient-text">User Management</h1>
-                    <a href="{% url 'create_user' %}" class="btn gradient-button">
-                        <i class="fas fa-plus me-2"></i>Add User
-                    </a>
+<div class="container-fluid px-0">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h5 class="mb-0">Users</h5>
+            <div class="text-muted small">
+                Manage cashier, manager and admin accounts.
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'create_user' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-2">
+                <i class="fas fa-user-plus"></i> Add User
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
-                
-                <div class="card shadow-card rounded-card">
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Username</th>
-                                        <th>Name</th>
-                                        <th>Role</th>
-                                        <th>Status</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for user in users %}
-                                    <tr>
-                                        <td>{{ user.username }}</td>
-                                        <td>{{ user.get_full_name|default:user.username }}</td>
-                                        <td>
-                                            <span class="badge bg-gradient-{{ user.role }}">{{ user.get_role_display }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-{{ user.is_active|yesno:'success,danger' }}">
-                                                {{ user.is_active|yesno:'Active,Inactive' }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <button class="btn btn-sm btn-outline-primary">Edit</button>
-                                            <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                <i class="fas fa-users"></i> User List
+            </h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th class="d-none d-md-table-cell">Contact</th>
+                            <th>Role</th>
+                            <!--<th>Status</th>-->
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td style="font-size: 10px; !important">
+                                <div class="fw-semibold small">
+                                    {{ user.username }}
+                                </div>
+                                <div class="text-muted small d-md-none">
+                                    {{ user.email|default:"No email" }}
+                                </div>
+                            </td>
+
+                            <td class="d-none d-md-table-cell" style="font-size: 10px; !important">
+                                <div class="small">
+                                    {{ user.email|default:"No email" }}
+                                </div>
+                                <div class="text-muted small">
+                                    {{ user.phone|default:"No phone" }}
+                                </div>
+                            </td>
+
+                            <td>
+                                {# Role badge – colour by role #}
+                                {% if user.role == 'admin' %}
+                                    <span class="badge bg-danger-subtle">Admin</span>
+                                {% elif user.role == 'manager' %}
+                                    <span class="badge bg-info-subtle">Manager</span>
+                                {% elif user.role == 'cashier' %}
+                                    <span class="badge bg-success-subtle">Cashier</span>
+                                {% else %}
+                                    <span class="badge bg-secondary"> {{ user.get_role_display }} </span>
+                                {% endif %}
+                            </td>
+
+                            <!--<td>-->
+                            <!--    {% if user.is_active %}-->
+                            <!--        <span class="badge bg-success-subtle">Active</span>-->
+                            <!--    {% else %}-->
+                            <!--        <span class="badge bg-danger-subtle">Inactive</span>-->
+                            <!--    {% endif %}-->
+                            <!--</td>-->
+
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="{% url 'edit_user' user.id %}"
+                                       class="btn btn-outline-secondary"
+                                       title="Edit user">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                    <form method="post"
+                                          action="{% url 'delete_user' user.id %}"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Are you sure you want to delete this user?')">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="btn btn-outline-danger"
+                                                title="Delete user">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted small py-4">
+                                No users found. Click
+                                <a href="{% url 'create_user' %}">Add User</a> to create one.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>

@@ -1,97 +1,350 @@
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Dashboard - Modern POS{% endblock %}
+{% block title %}Dashboard - SwiftPOS{% endblock %}
+
+{% block topbar_title %}
+Overview
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-        <!-- Main Content -->
-        <div class="col-md-9 col-lg-10">
-            <div class="p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="gradient-text">Dashboard</h1>
-                    <div class="btn-group">
-                        <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-cog me-1"></i>Quick Actions
-                        </button>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{% url 'user_management' %}">Manage Users</a></li>
-                            <li><a class="dropdown-item" href="#">Settings</a></li>
-                        </ul>
+<div class="container-fluid px-0">
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-2" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Hero / Welcome -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-0" style="background: radial-gradient(circle at top left, rgba(79,70,229,.14), transparent 55%), radial-gradient(circle at bottom right, rgba(34,197,94,.16), transparent 45%), var(--sp-surface);">
+                <div class="card-body d-md-flex justify-content-between align-items-center">
+                    <div class="mb-2 mb-md-0">
+                        <div class="small text-muted mb-1">Welcome back,</div>
+                        <h4 class="mb-1">{{ user_name|default:user.get_full_name|default:user.username }}</h4>
+                        <div class="small text-muted">Role: {{ user_role|default:user.get_role_display|default:"Staff" }}</div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{% url 'sales:pos' %}" class="btn btn-primary btn-sm d-flex align-items-center gap-2">
+                            <i class="fas fa-cash-register"></i> Open POS
+                        </a>
+                        <a href="{% url 'inventory:product_list' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+                            <i class="fas fa-boxes-stacked"></i> View Inventory
+                        </a>
                     </div>
                 </div>
-                
-                <!-- Quick Stats -->
-                <div class="row mb-4">
-                    <div class="col-md-3">
-                        <div class="card gradient-card shadow-card rounded-card">
-                            <div class="card-body text-center">
-                                <i class="fas fa-cash-register fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">{{ today_transactions }}</h4>
-                                <small class="text-white-50">Today's Sales</small>
-                            </div>
-                        </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Metric Cards -->
+    <div class="row g-3 mb-3">
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Today’s Sales</div>
+                        <div class="price mt-1">₦{{ today_sales|floatformat:2 }}</div>
+                        <div class="small text-muted">{{ today_transactions }} transaction{{ today_transactions|default:0|pluralize }}</div>
                     </div>
-                    <div class="col-md-3">
-                        <div class="card gradient-card shadow-card rounded-card">
-                            <div class="card-body text-center">
-                                <i class="fas fa-boxes fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">{{ total_inventory }}</h4>
-                                <small class="text-white-50">Inventory Items</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card gradient-card shadow-card rounded-card">
-                            <div class="card-body text-center">
-                                <i class="fas fa-users fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">{{ active_users }}</h4>
-                                <small class="text-white-50">Active Users</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card gradient-card shadow-card rounded-card">
-                            <div class="card-body text-center">
-                                <i class="fas fa-chart-line fa-2x text-white mb-2"></i>
-                                <h4 class="text-white mb-1">₦{{ today_sales|floatformat:0 }}</h4>
-                                <small class="text-white-50">Revenue</small>
-                            </div>
-                        </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:44px;height:44px;background:rgba(79,70,229,.08);color:var(--sp-primary);">
+                        <i class="fas fa-coins"></i>
                     </div>
                 </div>
-                
-                <!-- Recent Activity -->
-                <div class="card shadow-card rounded-card">
-                    <div class="card-header bg-white border-0">
-                        <h5 class="gradient-text mb-0">Recent Activity</h5>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Avg Order Value</div>
+                        <div class="price mt-1">₦{{ avg_order_value|floatformat:2 }}</div>
+                        <div class="small text-muted">Today</div>
                     </div>
-                    <div class="card-body">
-                        <div class="timeline">
-                            {% if timeline_activities %}
-                                {% for activity in timeline_activities %}
-                                <div class="timeline-item">
-                                    <div class="timeline-marker bg-{{ activity.color }}"></div>
-                                    <div class="timeline-content">
-                                        <h6><i class="{{ activity.icon }} me-2"></i>{{ activity.title }}</h6>
-                                        {% if activity.type == 'sale' %}
-                                            <p class="text-success mb-0">₦{{ activity.amount }}</p>
-                                        {% elif activity.type == 'inventory' %}
-                                            <p class="text-muted mb-0">{{ activity.product }} - {{ activity.quantity }}</p>
-                                        {% endif %}
-                                        <small class="text-muted">{{ activity.time }}</small>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:44px;height:44px;background:rgba(34,197,94,.1);color:var(--sp-secondary);">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Customers Today</div>
+                        <div class="price mt-1">{{ today_customers }}</div>
+                        <div class="small text-muted">Unique customers</div>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:44px;height:44px;background:rgba(59,130,246,.08);color:var(--sp-info);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small text-muted">Total Users</div>
+                        <div class="price mt-1">{{ total_users }}</div>
+                        <div class="small text-muted">Staff on system</div>
+                    </div>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center"
+                         style="width:44px;height:44px;background:rgba(250,204,21,.12);color:var(--sp-warning);">
+                        <i class="fas fa-id-card-alt"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Summary & Payment Breakdown -->
+    <div class="row g-3 mb-3">
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-chart-line"></i> Sales Snapshot
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="small text-muted mb-1">Today</div>
+                            <div class="price">₦{{ today_sales|floatformat:2 }}</div>
+                            <div class="small text-muted">{{ today_transactions }} transactions</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted mb-1">Yesterday</div>
+                            <div class="price">₦{{ yesterday_sales|floatformat:2 }}</div>
+                            <div class="small text-muted">{{ yesterday_transactions }} transactions</div>
+                        </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="small text-muted mb-1">This Week</div>
+                            <div class="price">₦{{ weekly_sales|floatformat:2 }}</div>
+                            <div class="small text-muted">{{ weekly_transactions }} transactions</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted mb-1">This Month</div>
+                            <div class="price">₦{{ monthly_sales|floatformat:2 }}</div>
+                            <div class="small text-muted">{{ monthly_transactions }} transactions</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <span class="badge rounded-pill {% if sales_growth_percentage >= 0 %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}"
+                              style="border:1px solid rgba(148,163,184,.4);">
+                            <i class="fas {% if sales_growth_percentage >= 0 %}fa-arrow-up{% else %}fa-arrow-down{% endif %} me-1"></i>
+                            {{ sales_growth_percentage|floatformat:1 }}% vs yesterday
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-wallet"></i> Payment Methods
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if payment_breakdown %}
+                        <div class="row g-2">
+                            {% for method in payment_breakdown %}
+                                <div class="col-6 col-md-3">
+                                    <div class="p-2 rounded text-center" style="background:var(--sp-surface-muted);">
+                                        <div class="progress mb-2" style="height:6px;">
+                                            <div class="progress-bar" role="progressbar"
+                                                 style="width: {{ method.percentage }}%; background-color: var(--sp-primary);"
+                                                 aria-valuenow="{{ method.percentage }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <div class="fw-semibold small">₦{{ method.total|floatformat:2 }}</div>
+                                        <div class="text-muted small">{{ method.get_payment_method_display }}</div>
                                     </div>
                                 </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="text-center py-4 text-muted">
-                                    <i class="fas fa-clock fa-3x mb-3"></i>
-                                    <p>No recent activities</p>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted small mb-0">No payment data available for today.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activity / Top Products / Best Customers -->
+    <div class="row g-3 mb-3">
+        <!-- Recent Activity -->
+        <div class="col-xl-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-bolt"></i> Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_orders %}
+                        {% for order in recent_orders %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <div class="fw-semibold small">{{ order.customer_name }}</div>
+                                    <div class="text-muted small">{{ order.created_at|date:"H:i" }}</div>
                                 </div>
-                            {% endif %}
+                                <div class="text-end">
+                                    <div class="text-success small">₦{{ order.final_amount|floatformat:2 }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small mb-0 text-center">No recent activity.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Selling Items -->
+        <div class="col-xl-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-fire"></i> Top Selling Items (Today)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if top_selling_items %}
+                        {% for item in top_selling_items %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <div class="fw-semibold small">{{ item.product__name }}</div>
+                                    <div class="text-muted small">{{ item.product__sku }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-success small">₦{{ item.total_revenue|floatformat:2 }}</div>
+                                    <div class="text-muted small">{{ item.total_quantity }} sold</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small mb-0 text-center">No sales recorded today.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Customers -->
+        <div class="col-xl-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-crown"></i> Best Customers
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if best_customers %}
+                        {% for customer in best_customers %}
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div>
+                                    <div class="fw-semibold small">{{ customer.customer_name }}</div>
+                                    <div class="text-muted small">{{ customer.orders }} order{{ customer.orders|pluralize }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-success small">₦{{ customer.total_spent|floatformat:2 }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small mb-0 text-center">No customer data yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory & Cashier Performance -->
+    <div class="row g-3">
+        <!-- Inventory Status -->
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-boxes-stacked"></i> Inventory Status
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3">
+                        <div class="col-6">
+                            <div class="small text-muted mb-1">Total Items</div>
+                            <div class="h5 mb-0">{{ total_inventory }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted mb-1">In Stock</div>
+                            <div class="h5 mb-0 text-success">{{ in_stock_products }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted mb-1">Low Stock</div>
+                            <div class="h5 mb-0 text-warning">{{ low_stock_products }}</div>
+                        </div>
+                        <div class="col-6">
+                            <div class="small text-muted mb-1">Out of Stock</div>
+                            <div class="h5 mb-0 text-danger">{{ out_of_stock_products }}</div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cashier Performance -->
+        <div class="col-lg-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header">
+                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-user-tie"></i> Cashier Performance (Today)
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if cashier_performance %}
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Cashier</th>
+                                        <th class="text-end">Orders</th>
+                                        <th class="text-end">Sales</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for cashier in cashier_performance %}
+                                        <tr>
+                                            <td>{{ cashier.cashier }}</td>
+                                            <td class="text-end">{{ cashier.total_orders }}</td>
+                                            <td class="text-end">₦{{ cashier.total_sales|floatformat:2 }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted small mb-0 text-center">No cashier data for today.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>

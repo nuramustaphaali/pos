@@ -269,36 +269,75 @@ def repeat_sale(request, order_id):
     messages.success(request, 'Sale repeated successfully!')
     return redirect('sales:pos')
 
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Sum, Count
+from .models import POSOrder, SaleSummary
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Sum, Count
+from .models import POSOrder, SaleSummary
+
 @login_required
 def payment_summary(request):
-    """View for payment summaries and analytics"""
-    # Get today's summary
+    """
+    Payment summary view for displaying analytics and sales data.
+    """
+    # Get today's date
     today = timezone.now().date()
+
+    # Fetch or generate today's summary using SaleSummary model
     today_summary = SaleSummary.objects.filter(date=today).first()
-    
-    # Get recent summaries
+    if not today_summary:
+        # Generate summary for today if it doesn't exist
+        today_summary = SaleSummary.generate_summary(today)
+
+    # Fetch recent summaries (last 7 days)
+    recent_dates = [today - timedelta(days=i) for i in range(7)]
+    for date in recent_dates:
+        if not SaleSummary.objects.filter(date=date).exists():
+            SaleSummary.generate_summary(date)
+
     recent_summaries = SaleSummary.objects.filter(
         date__gte=today - timedelta(days=7)
     ).order_by('-date')
-    
-    # Payment method distribution
-    payment_methods = PaymentTransaction.objects.filter(
-        created_at__date=today
+
+    # Calculate payment method distribution for today
+    payment_methods = POSOrder.objects.filter(
+        created_at__date=today,
+        status='completed'
     ).values('payment_method').annotate(
-        total=Sum('amount'),
+        total=Sum('final_amount'),
         count=Count('id')
-    )
-    
+    ).order_by('-total')
+
+    # Calculate percentages for payment methods
+    total_amount = sum(pm['total'] or 0 for pm in payment_methods)
+    for pm in payment_methods:
+        pm['percentage'] = round(((pm['total'] or 0) / total_amount) * 100, 2) if total_amount > 0 else 0
+
+    # Map payment method codes to human-readable names
+    PAYMENT_METHOD_CHOICES = dict(POSOrder.PAYMENT_METHODS)
+    for pm in payment_methods:
+        pm['display_name'] = PAYMENT_METHOD_CHOICES.get(pm['payment_method'], "Unknown")
+
+    # Context dictionary with detailed explanation of each variable
     context = {
-        'today_summary': today_summary,
-        'recent_summaries': recent_summaries,
-        'payment_methods': payment_methods,
-        'user_role': request.user.role,
-        'user_name': request.user.get_full_name() or request.user.username,
+        'summary': today_summary,  # Contains totals like total_sales, cash_sales, pos_sales, etc.
+        'today_summary': today_summary,  # Duplicate for template consistency
+        'recent_summaries': recent_summaries,  # List of SaleSummary objects for the last 7 days
+        'payment_methods': payment_methods,  # List of payment methods with totals, counts, and percentages
+        'user_role': request.user.role,  # Role of the logged-in user (e.g., admin, cashier)
+        'user_name': request.user.get_full_name() or request.user.username,  # Full name or username of the logged-in user
     }
+
     return render(request, 'sales/payment_summary.html', context)
-
-
+    
 # sales/views.py (FINAL - Complete working version)
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -316,6 +355,7 @@ from core.models import SystemSettings, CustomField, DynamicFormData
 from .models import POSOrder, POSOrderItem, PaymentTransaction, SaleSummary, DailySalesSummary, UnusualTransaction
 from .forms import POSOrderForm, POSOrderItemForm
 
+# sales/views.py (Updated daily_dashboard function)
 @login_required
 def daily_dashboard(request):
     """Today's sales dashboard"""
@@ -353,6 +393,15 @@ def daily_dashboard(request):
     
     summary.save()
     
+    # Get top selling items for today
+    top_selling_items = POSOrderItem.objects.filter(
+        order__created_at__date=today,
+        order__status='completed'
+    ).values('product__name', 'product__sku').annotate(
+        total_quantity=Sum('quantity'),
+        total_revenue=Sum('total_price')
+    ).order_by('-total_quantity')[:5]
+    
     # Get low stock products
     low_stock_products = Product.objects.filter(
         stock_status__in=['low_stock', 'out_of_stock']
@@ -366,6 +415,7 @@ def daily_dashboard(request):
     
     context = {
         'summary': summary,
+        'top_selling_items': top_selling_items,
         'low_stock_products': low_stock_products,
         'today_orders': today_orders,
         'user_role': request.user.role,
@@ -483,73 +533,117 @@ def generate_receipt_with_qr(request, order_id):
     import qrcode
     from reportlab.pdfgen import canvas
     from reportlab.lib.pagesizes import A4
+    from reportlab.lib.colors import Color
     from io import BytesIO
-    
+
     order = get_object_or_404(POSOrder, id=order_id)
     order_items = POSOrderItem.objects.filter(order=order).select_related('product')
-    
+
     # Get system settings
     system_settings = SystemSettings.objects.first()
-    
-    # Generate QR code for order verification
+
+    # Generate QR code
     qr_data = f"{request.build_absolute_uri('/sales/verify-order/')}?order={order.order_number}"
     qr = qrcode.QRCode(version=1, box_size=10, border=5)
     qr.add_data(qr_data)
     qr.make(fit=True)
-    
+
     img = qr.make_image(fill_color="black", back_color="white")
     buffer = BytesIO()
     img.save(buffer, format='PNG')
     qr_image = buffer.getvalue()
-    
-    # Create PDF receipt
+
+    # Create PDF
     buffer = BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    
-    # Header
-    p.setFont("Helvetica-Bold", 16)
-    p.drawString(50, height - 50, system_settings.business_name or "Modern POS")
-    p.setFont("Helvetica", 10)
-    p.drawString(50, height - 70, system_settings.business_address or "")
-    p.drawString(50, height - 85, f"Order: {order.order_number}")
-    p.drawString(50, height - 100, f"Date: {order.created_at.strftime('%Y-%m-%d %H:%M')}")
-    p.drawString(50, height - 115, f"Cashier: {order.cashier}")
-    
-    # Items
-    y_position = height - 150
+
+    # -------------------------
+    # BACKGROUND TEXTURE
+    # -------------------------
+    p.saveState()
+
+    texture_color = Color(0.85, 0.85, 0.85, alpha=0.15)  # VERY light grey
+    p.setFillColor(texture_color)
+    p.setFont("Helvetica", 22)
+
+    # Repeat the order number diagonally across the page
+    for y in range(0, int(height), 120):
+        for x in range(0, int(width), 250):
+            p.drawString(x, y, str(order.order_number))
+
+    p.restoreState()
+
+    # -------------------------
+    # HEADER (More Nigerian POS Style)
+    # -------------------------
+    p.setFont("Helvetica-Bold", 20)
+    p.drawString(40, height - 60, system_settings.business_name or "MODERN POS")
+
+    p.setFont("Helvetica", 11)
+    p.drawString(40, height - 82, system_settings.business_address or "")
+
     p.setFont("Helvetica-Bold", 12)
-    p.drawString(50, y_position, "Items")
+    p.drawString(40, height - 110, f"ORDER RECEIPT - #{order.order_number}")
+
     p.setFont("Helvetica", 10)
-    
+    p.drawString(40, height - 130, f"Date: {order.created_at.strftime('%Y-%m-%d %H:%M')}")
+    p.drawString(250, height - 130, f"Cashier: {order.cashier}")
+
+    # -------------------------
+    # ITEMS SECTION
+    # -------------------------
+    p.setFont("Helvetica-Bold", 12)
+    y_position = height - 170
+    p.drawString(40, y_position, "ITEMS PURCHASED")
+
+    p.setFont("Helvetica", 10)
     y_position -= 20
+
     for item in order_items:
-        p.drawString(50, y_position, f"{item.quantity} x {item.product.name}")
-        p.drawString(300, y_position, f"₦{item.total_price}")
-        y_position -= 15
-    
-    # Totals
+        p.drawString(40, y_position, f"{item.quantity} x {item.product.name}")
+        p.drawRightString(400, y_position, f"₦{item.total_price}")
+        y_position -= 16
+
+    # -------------------------
+    # TOTALS
+    # -------------------------
+    y_position -= 10
+    p.line(40, y_position, 400, y_position)
     y_position -= 20
-    p.line(50, y_position, 400, y_position)
-    y_position -= 15
-    p.drawString(50, y_position, f"Subtotal: ₦{order.total_amount}")
-    y_position -= 15
-    p.drawString(50, y_position, f"Tax: ₦{order.tax_amount}")
-    y_position -= 15
-    p.drawString(50, y_position, f"Total: ₦{order.final_amount}")
-    y_position -= 15
-    p.drawString(50, y_position, f"Payment: {order.get_payment_method_display()}")
-    
-    # QR Code
+
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(40, y_position, f"Subtotal:")
+    p.drawRightString(400, y_position, f"₦{order.total_amount}")
+
+    y_position -= 18
+    p.drawString(40, y_position, "Tax:")
+    p.drawRightString(400, y_position, f"₦{order.tax_amount}")
+
+    y_position -= 18
+    p.drawString(40, y_position, "Total Amount:")
+    p.drawRightString(400, y_position, f"₦{order.final_amount}")
+
+    y_position -= 18
+    p.drawString(40, y_position, f"Payment Method:")
+    p.drawRightString(400, y_position, order.get_payment_method_display())
+
+    # -------------------------
+    # QR CODE
+    # -------------------------
     if qr_image:
-        p.drawString(50, y_position - 50, "Scan for order verification:")
-        p.drawImage(BytesIO(qr_image), 50, y_position - 150, width=100, height=100)
-    
-    # Footer
-    p.drawString(50, 50, system_settings.receipt_footer or "")
-    
+        p.setFont("Helvetica", 10)
+        p.drawString(40, y_position - 40, "Scan to verify order:")
+        p.drawImage(BytesIO(qr_image), 40, y_position - 140, width=110, height=110)
+
+    # -------------------------
+    # FOOTER
+    # -------------------------
+    p.setFont("Helvetica-Oblique", 10)
+    p.drawString(40, 40, system_settings.receipt_footer or "Thank you for your patronage!")
+
     p.showPage()
     p.save()
-    
+
     buffer.seek(0)
     return HttpResponse(buffer.getvalue(), content_type='application/pdf')

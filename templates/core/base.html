@@ -1,286 +1,287 @@
-<!-- templates/core/base.html (MODERN HEADER & NAVIGATION) -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Modern POS System{% endblock %}</title>
-    <!-- Bootstrap CDN -->
+    <title>{% block title %}SwiftPOS{% endblock %}</title>
+
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
     <!-- Poppins Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <!-- SwiftPOS CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=11">
+
     {% block extra_css %}{% endblock %}
 </head>
-<body>
-    <!-- Modern Header -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand d-flex align-items-center" href="{% url 'dashboard' %}">
-                <i class="fas fa-cash-register me-2"></i>
-                <span class="fw-bold">Modern POS</span>
-            </a>
-            
-            <!-- Mobile Menu Toggle -->
-            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#mobileSidebar">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <!-- Desktop Navigation -->
-            <div class="d-none d-lg-flex align-items-center">
-                <div class="dropdown me-3">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="salesDropdown" data-bs-toggle="dropdown">
-                        <i class="fas fa-cash-register me-1"></i>Sales
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'sales:pos' %}"><i class="fas fa-cash-register me-2"></i>POS Terminal</a></li>
-                        <li><a class="dropdown-item" href="{% url 'sales:daily_dashboard' %}"><i class="fas fa-chart-line me-2"></i>Today's Dashboard</a></li>
-                        <li><a class="dropdown-item" href="{% url 'sales:yesterday_summary' %}"><i class="fas fa-history me-2"></i>Yesterday Summary</a></li>
-                    </ul>
-                </div>
-                
-                {% if user.role == 'admin' or user.role == 'manager' %}
-                <div class="dropdown me-3">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="inventoryDropdown" data-bs-toggle="dropdown">
-                        <i class="fas fa-boxes me-1"></i>Inventory
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'inventory:product_list' %}"><i class="fas fa-box me-2"></i>Products</a></li>
-                        <li><a class="dropdown-item" href="{% url 'inventory:category_list' %}"><i class="fas fa-tags me-2"></i>Categories</a></li>
-                        <li><a class="dropdown-item" href="{% url 'inventory:stock_adjustment_history' %}"><i class="fas fa-history me-2"></i>Stock History</a></li>
-                    </ul>
-                </div>
-                {% endif %}
-                
-                {% if user.role == 'admin' %}
-                <div class="dropdown me-3">
-                    <button class="btn btn-outline-light dropdown-toggle" type="button" id="settingsDropdown" data-bs-toggle="dropdown">
-                        <i class="fas fa-cog me-1"></i>Settings
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'system_settings' %}"><i class="fas fa-sliders-h me-2"></i>System Settings</a></li>
-                        <li><a class="dropdown-item" href="{% url 'field_builder' %}"><i class="fas fa-layer-group me-2"></i>Field Builder</a></li>
-                        <li><a class="dropdown-item" href="{% url 'user_management' %}"><i class="fas fa-users me-2"></i>User Management</a></li>
-                    </ul>
-                </div>
-                {% endif %}
-                
-                <!-- User Profile -->
-                <div class="dropdown">
-                    <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                        <i class="fas fa-user-circle me-2"></i>
-                        <span>{{ user.get_full_name|default:user.username }}</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                        <li><span class="dropdown-item-text"><strong>Role:</strong> {{ user.get_role_display }}</span></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'logout' %}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
-    
-    <!-- Mobile Sidebar Offcanvas -->
-    <div class="offcanvas offcanvas-start bg-primary shadow-sm" tabindex="-1" id="mobileSidebar">
-        <div class="offcanvas-header">
-            <h5 class="offcanvas-title">Menu</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
-        </div>
-        <div class="offcanvas-body">
-            <div class="text-center mb-4">
-                <div class="avatar-gradient mb-3">
-                    <i class="fas fa-user-circle fa-3x text-white"></i>
-                </div>
-                <h6 class="text-white mb-1">{{ user.get_full_name|default:user.username }}</h6>
-                <span class="badge bg-primary">{{ user.get_role_display }}</span>
-            </div>
-            
-            <nav class="nav-menu">
-                <!-- Dashboard -->
-                <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+<body class="swiftpos-body">
+
+<div class="swiftpos-app d-flex">
+
+    <!-- SIDEBAR -->
+    <aside id="swiftposSidebar" class="swiftpos-sidebar">
+        <div class="sidebar-inner d-flex flex-column h-100">
+
+            <!-- Brand -->
+            <div class="sidebar-header d-flex align-items-center justify-content-between">
+                <a href="{% url 'dashboard' %}" class="sidebar-brand d-flex align-items-center text-decoration-none">
+                    <div class="brand-logo d-flex align-items-center justify-content-center">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="brand-text ms-2">
+                        <span class="brand-title">SwiftPOS</span>
+                        <span class="brand-subtitle">Fast. Simple. Clear.</span>
+                    </div>
                 </a>
-                
-                <!-- Sales -->
+
+                <!-- Desktop collapse -->
+                <button id="sidebarToggle"
+                        class="btn btn-sm btn-outline-light d-none d-lg-inline-flex sidebar-toggle-btn"
+                        type="button">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <!-- User -->
+            <div class="sidebar-user mt-3 mb-2 px-2">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-meta">
+                    <div class="user-name">
+                        {{ user.get_full_name|default:user.username }}
+                    </div>
+                    {% if user.get_role_display %}
+                        <div class="user-role">{{ user.get_role_display }}</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% with current_url_name=request.resolver_match.url_name %}
+
+            <!-- NAV -->
+            <nav class="sidebar-nav flex-grow-1 mt-2">
+
+                <div class="sidebar-section-label">Overview</div>
+
+                <a href="{% url 'dashboard' %}"
+                   class="sidebar-link {% if current_url_name == 'dashboard' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-gauge"></i></span>
+                    <span class="label">Dashboard</span>
+                </a>
+
                 {% if user.role == 'admin' or user.role == 'manager' or user.role == 'cashier' %}
-                <a href="{% url 'sales:pos' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'pos' %}active{% endif %}">
-                    <i class="fas fa-cash-register me-2"></i>POS Sales
+                <div class="sidebar-section-label mt-3">Sales</div>
+
+                <a href="{% url 'sales:pos' %}"
+                   class="sidebar-link {% if current_url_name == 'pos' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-cash-register"></i></span>
+                    <span class="label">POS Terminal</span>
                 </a>
-                <a href="{% url 'sales:daily_dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'daily_dashboard' %}active{% endif %}">
-                    <i class="fas fa-chart-line me-2"></i>Daily Dashboard
+
+                <a href="{% url 'sales:daily_dashboard' %}"
+                   class="sidebar-link {% if current_url_name == 'daily_dashboard' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-chart-line"></i></span>
+                    <span class="label">Today Dashboard</span>
                 </a>
-                <a href="{% url 'sales:yesterday_summary' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'yesterday_summary' %}active{% endif %}">
-                    <i class="fas fa-history me-2"></i>Yesterday Summary
+
+                <a href="{% url 'sales:yesterday_summary' %}"
+                   class="sidebar-link {% if current_url_name == 'yesterday_summary' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-history"></i></span>
+                    <span class="label">Yesterday Summary</span>
                 </a>
-                <a href="{% url 'sales:payment_summary' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'payment_summary' %}active{% endif %}">
-                    <i class="fas fa-money-bill-wave me-2"></i>Payment Summary
+
+                <a href="{% url 'sales:payment_summary' %}"
+                   class="sidebar-link {% if current_url_name == 'payment_summary' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-wallet"></i></span>
+                    <span class="label">Payment Summary</span>
                 </a>
                 {% endif %}
-                
-                <!-- Inventory -->
+
                 {% if user.role == 'admin' or user.role == 'manager' %}
-                <a href="{% url 'inventory:dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                    <i class="fas fa-boxes me-2"></i>Inventory
+                <div class="sidebar-section-label mt-3">Inventory</div>
+
+                <a href="{% url 'inventory:dashboard' %}"
+                   class="sidebar-link {% if request.resolver_match.namespace == 'inventory' and current_url_name == 'dashboard' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-clipboard-list"></i></span>
+                    <span class="label">Inventory Dashboard</span>
                 </a>
-                <a href="{% url 'inventory:product_list' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'product_list' %}active{% endif %}">
-                    <i class="fas fa-box me-2"></i>Products
+
+                <a href="{% url 'inventory:product_list' %}"
+                   class="sidebar-link {% if current_url_name == 'product_list' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-box"></i></span>
+                    <span class="label">Products</span>
                 </a>
-                <a href="{% url 'inventory:category_list' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'category_list' %}active{% endif %}">
-                    <i class="fas fa-tags me-2"></i>Categories
+
+                <a href="{% url 'inventory:category_list' %}"
+                   class="sidebar-link {% if current_url_name == 'category_list' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-tags"></i></span>
+                    <span class="label">Categories</span>
                 </a>
-                <a href="{% url 'inventory:stock_adjustment_history' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'stock_adjustment_history' %}active{% endif %}">
-                    <i class="fas fa-history me-2"></i>Stock History
+
+                <a href="{% url 'inventory:stock_adjustment_history' %}"
+                   class="sidebar-link {% if current_url_name == 'stock_adjustment_history' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-rotate"></i></span>
+                    <span class="label">Stock History</span>
                 </a>
                 {% endif %}
-                
-                <!-- Settings -->
+
                 {% if user.role == 'admin' %}
-                <a href="{% url 'system_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'system_settings' %}active{% endif %}">
-                    <i class="fas fa-cog me-2"></i>System Settings
+                <div class="sidebar-section-label mt-3">Admin</div>
+
+                <a href="{% url 'user_management' %}"
+                   class="sidebar-link {% if current_url_name == 'user_management' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-users"></i></span>
+                    <span class="label">Users</span>
                 </a>
-                <a href="{% url 'field_builder' %}" class="nav-link {% if request.resolver_match.url_name == 'field_builder' %}active{% endif %}">
-                    <i class="fas fa-sliders-h me-2"></i>Field Builder
+
+                <a href="{% url 'system_settings' %}"
+                   class="sidebar-link {% if current_url_name == 'system_settings' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-sliders-h"></i></span>
+                    <span class="label">Settings</span>
                 </a>
-                <a href="{% url 'user_management' %}" class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
-                    <i class="fas fa-users me-2"></i>User Management
+
+                <a href="{% url 'field_builder' %}"
+                   class="sidebar-link {% if current_url_name == 'field_builder' %}active{% endif %}">
+                    <span class="icon"><i class="fas fa-layer-group"></i></span>
+                    <span class="label">Field Builder</span>
                 </a>
                 {% endif %}
-                
-                <!-- Logout -->
-                <a href="{% url 'logout' %}" class="nav-link text-danger mt-2">
-                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                </a>
+
             </nav>
+            {% endwith %}
+
+            <!-- LOGOUT -->
+            <div class="sidebar-footer mt-auto p-2">
+                <a href="{% url 'logout' %}" class="sidebar-link logout-link">
+                    <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
+                    <span class="label">Logout</span>
+                </a>
+            </div>
         </div>
-    </div>
-    
-    <!-- Desktop Sidebar -->
-    <div class="sidebar-gradient">
-        <div class="sidebar-content">
-            <div class="text-center mb-4">
-                <div class="avatar-gradient mb-3">
-                    <i class="fas fa-user-circle fa-3x text-white"></i>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="swiftpos-main d-flex flex-column flex-grow-1">
+
+        <!-- TOPBAR -->
+        <header class="swiftpos-topbar d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-2">
+                <!-- Mobile Hamburger -->
+                <button id="mobileSidebarToggle"
+                        class="btn btn-sm btn-outline-secondary d-inline-flex d-lg-none"
+                        type="button">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="topbar-title">
+                    {% block topbar_title %}Dashboard{% endblock %}
                 </div>
-                <h6 class="text-white mb-1">{{ user.get_full_name|default:user.username }}</h6>
-                <span class="badge bg-primary">{{ user.get_role_display }}</span>
             </div>
-            
-            <nav class="nav-menu">
-                <!-- Dashboard -->
-                <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
-                </a>
-                
-                <!-- Sales -->
-                {% if user.role == 'admin' or user.role == 'manager' or user.role == 'cashier' %}
-                <a href="{% url 'sales:pos' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'pos' %}active{% endif %}">
-                    <i class="fas fa-cash-register me-2"></i>POS Sales
-                </a>
-                <a href="{% url 'sales:daily_dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'daily_dashboard' %}active{% endif %}">
-                    <i class="fas fa-chart-line me-2"></i>Daily Dashboard
-                </a>
-                <a href="{% url 'sales:yesterday_summary' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'yesterday_summary' %}active{% endif %}">
-                    <i class="fas fa-history me-2"></i>Yesterday Summary
-                </a>
-                <a href="{% url 'sales:payment_summary' %}" class="nav-link {% if request.resolver_match.app_name == 'sales' and request.resolver_match.url_name == 'payment_summary' %}active{% endif %}">
-                    <i class="fas fa-money-bill-wave me-2"></i>Payment Summary
-                </a>
-                {% endif %}
-                
-                <!-- Inventory -->
-                {% if user.role == 'admin' or user.role == 'manager' %}
-                <a href="{% url 'inventory:dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                    <i class="fas fa-boxes me-2"></i>Inventory
-                </a>
-                <a href="{% url 'inventory:product_list' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'product_list' %}active{% endif %}">
-                    <i class="fas fa-box me-2"></i>Products
-                </a>
-                <a href="{% url 'inventory:category_list' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'category_list' %}active{% endif %}">
-                    <i class="fas fa-tags me-2"></i>Categories
-                </a>
-                <a href="{% url 'inventory:stock_adjustment_history' %}" class="nav-link {% if request.resolver_match.app_name == 'inventory' and request.resolver_match.url_name == 'stock_adjustment_history' %}active{% endif %}">
-                    <i class="fas fa-history me-2"></i>Stock History
-                </a>
-                {% endif %}
-                
-                <!-- Settings -->
-                {% if user.role == 'admin' %}
-                <a href="{% url 'system_settings' %}" class="nav-link {% if request.resolver_match.url_name == 'system_settings' %}active{% endif %}">
-                    <i class="fas fa-cog me-2"></i>System Settings
-                </a>
-                <a href="{% url 'field_builder' %}" class="nav-link {% if request.resolver_match.url_name == 'field_builder' %}active{% endif %}">
-                    <i class="fas fa-sliders-h me-2"></i>Field Builder
-                </a>
-                <a href="{% url 'user_management' %}" class="nav-link {% if request.resolver_match.url_name == 'user_management' %}active{% endif %}">
-                    <i class="fas fa-users me-2"></i>User Management
-                </a>
-                {% endif %}
-                
-                <!-- Logout -->
-                <a href="{% url 'logout' %}" class="nav-link text-danger mt-2">
-                    <i class="fas fa-sign-out-alt me-2"></i>Logout
-                </a>
-            </nav>
-        </div>
-    </div>
-    
-    <!-- Main Content -->
-    <div class="main-content">
-        {% block content %}{% endblock %}
-    </div>
-    
-    <!-- Loading Skeleton -->
-    <div id="loading-skeleton" class="loading-skeleton" style="display: none;">
-        <div class="skeleton-container">
-            <div class="skeleton-header"></div>
-            <div class="skeleton-content">
-                <div class="skeleton-line"></div>
-                <div class="skeleton-line"></div>
-                <div class="skeleton-line"></div>
+
+            <!-- User menu -->
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary d-flex align-items-center gap-2"
+                        data-bs-toggle="dropdown">
+                    <i class="fas fa-user-circle"></i>
+                    <span class="d-none d-sm-inline">{{ user.username }}</span>
+                    <i class="fas fa-chevron-down small"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li class="dropdown-header small">
+                        {{ user.get_full_name|default:user.username }}
+                        {% if user.get_role_display %}
+                        <br><span class="text-muted">{{ user.get_role_display }}</span>
+                        {% endif %}
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="{% url 'logout' %}">
+                            <i class="fas fa-sign-out-alt me-2"></i>Logout
+                        </a>
+                    </li>
+                </ul>
             </div>
-        </div>
+        </header>
+
+        <!-- CONTENT -->
+        <main class="swiftpos-content flex-grow-1">
+            <div class="container-fluid py-3">
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} mb-2">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                {% block content %}{% endblock %}
+            </div>
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="swiftpos-footer py-2">
+            <div class="container-fluid d-flex justify-content-between small">
+                <span>&copy; {% now "Y" %} SwiftPOS</span>
+                <span class="text-muted">Fast. Simple & Clear.</span>
+            </div>
+        </footer>
+
     </div>
-    
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% block extra_js %}{% endblock %}
-    
-    <script>
-    // Loading skeleton functions
-    function showLoading() {
-        document.getElementById('loading-skeleton').style.display = 'block';
-    }
-    
-    function hideLoading() {
-        document.getElementById('loading-skeleton').style.display = 'none';
-    }
-    
-    // Auto-hide loading after page load
-    window.addEventListener('load', function() {
-        setTimeout(hideLoading, 500);
-    });
-    
-    // Performance optimization: Lazy load images
-    document.addEventListener('DOMContentLoaded', function() {
-        const images = document.querySelectorAll('img[data-src]');
-        const imageObserver = new IntersectionObserver((entries, observer) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target;
-                    img.src = img.dataset.src;
-                    img.removeAttribute('data-src');
-                    imageObserver.unobserve(img);
-                }
-            });
+</div>
+
+<!-- Mobile Overlay -->
+<div id="sidebarOverlay" class="swiftpos-overlay d-lg-none"></div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Add these lines inside the <head> section of base.html -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<!-- SIDEBAR SCRIPT -->
+<script>
+(function () {
+    const sidebar = document.getElementById("swiftposSidebar");
+    const desktopToggle = document.getElementById("sidebarToggle");
+    const mobileToggle = document.getElementById("mobileSidebarToggle");
+    const overlay = document.getElementById("sidebarOverlay");
+    const KEY = "swiftpos_sidebar_collapsed";
+
+    if (desktopToggle) {
+        desktopToggle.addEventListener("click", function () {
+            sidebar.classList.toggle("collapsed");
+            try {
+                localStorage.setItem(KEY, sidebar.classList.contains("collapsed") ? "1" : "0");
+            } catch (e) {}
         });
-        
-        images.forEach(img => imageObserver.observe(img));
-    });
-    </script>
+    }
+
+    try {
+        if (localStorage.getItem(KEY) === "1") {
+            sidebar.classList.add("collapsed");
+        }
+    } catch (e) {}
+
+    if (mobileToggle) {
+        mobileToggle.addEventListener("click", function () {
+            document.body.classList.toggle("sidebar-mobile-open");
+        });
+    }
+
+    if (overlay) {
+        overlay.addEventListener("click", function () {
+            document.body.classList.remove("sidebar-mobile-open");
+        });
+    }
+})();
+</script>
+
+{% block extra_js %}{% endblock %}
 </body>
 </html>

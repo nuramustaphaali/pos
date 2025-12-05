@@ -3,122 +3,382 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Modern POS</title>
+    <title>Login - SwiftPOS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Poppins Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <!-- Global SwiftPOS Styles (for buttons/fonts, etc.) -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=login1">
+
     <style>
-        body {
-            font-family: 'Poppins', sans-serif;
+        :root {
+            --sp-primary: #4F46E5;
+            --sp-secondary: #22C55E;
+            --sp-bg-dark: #020617;
+            --sp-bg-dark-soft: #0B1120;
+            --sp-text-muted: #6B7280;
+        }
+
+        body.auth-body {
+            margin: 0;
+            padding: 0;
             min-height: 100vh;
+            font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at top, rgba(79, 70, 229, 0.4), transparent 55%),
+                radial-gradient(circle at bottom left, rgba(34, 197, 94, 0.35), transparent 55%),
+                linear-gradient(to bottom right, #020617, #020617 40%, #020617 100%);
+            color: #E5E7EB;
+        }
+
+        .auth-wrapper {
+            max-width: 1100px;
+        }
+
+        .auth-card {
+            border-radius: 20px;
+            box-shadow: 0 22px 45px rgba(15, 23, 42, 0.65);
+            overflow: hidden;
+            background-color: #FFFFFF;
+            border: 1px solid rgba(15, 23, 42, 0.12);
+        }
+
+        .auth-form-side {
+            background-color: #FFFFFF;
+            color: #111827;
+            padding: 2.2rem 2rem;
+        }
+
+        .auth-hero-side {
+            background:
+                radial-gradient(circle at top left, rgba(79, 70, 229, 0.9), transparent 55%),
+                radial-gradient(circle at bottom right, rgba(34, 197, 94, 0.7), transparent 45%),
+                #020617;
+            color: #E5E7EB;
+            padding: 2.4rem 2.2rem;
+            position: relative;
+        }
+
+        .auth-brand-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 999px;
+            background: radial-gradient(circle at 30% 20%, #FACC15, transparent 55%), #4F46E5;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            margin: 0;
-            padding: 20px;
+            color: #F9FAFB;
+            box-shadow: 0 0 0 1px rgba(129, 140, 248, 0.6);
         }
-        .login-container {
-            width: 100%;
-            max-width: 400px;
+
+        .auth-brand-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
         }
-        .login-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            padding: 2rem;
+
+        .auth-brand-subtitle {
+            font-size: 0.78rem;
+            color: #6B7280;
         }
-        .gradient-input {
-            background: rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-            padding: 12px 15px;
-            color: #333;
-            transition: all 0.3s ease;
-            font-family: 'Poppins', sans-serif;
+
+        .auth-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            background-color: #EEF2FF;
+            color: #3730A3;
+            border: 1px solid rgba(129, 140, 248, 0.6);
         }
-        .gradient-input:focus {
-            outline: none;
-            border-color: rgba(102, 126, 234, 0.5);
-            box-shadow: 0 0 20px rgba(102, 126, 234, 0.2);
-            background: rgba(255, 255, 255, 0.2);
+
+        .auth-title {
+            font-size: 1.4rem;
+            font-weight: 600;
         }
-        .role-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
+
+        .auth-subtitle {
+            font-size: 0.85rem;
+            color: #6B7280;
+        }
+
+        .auth-input-label {
             font-size: 0.8rem;
-            font-weight: 600;
+            font-weight: 500;
+            color: #374151;
         }
-        .gradient-text {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 700;
+
+        .form-control-auth {
+            border-radius: 12px;
+            border: 1px solid #D1D5DB;
+            font-size: 0.9rem;
         }
-        .gradient-button {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+
+        .form-control-auth:focus {
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 1px rgba(79, 70, 229, 0.35);
+        }
+
+        .btn-auth-primary {
+            background: linear-gradient(to right, #4F46E5, #6366F1);
             border: none;
-            padding: 12px 30px;
-            border-radius: 50px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            font-family: 'Poppins', sans-serif;
+            border-radius: 999px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding-block: 0.65rem;
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.5);
+            color: #F9FAFB;
         }
-        .gradient-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(245, 87, 108, 0.4);
+
+        .btn-auth-primary:hover {
+            filter: brightness(1.05);
+        }
+
+        .auth-footer-text {
+            font-size: 0.75rem;
+            color: #6B7280;
+        }
+
+        .auth-highlight-number {
+            font-size: 1.7rem;
+            font-weight: 600;
+        }
+
+        .auth-highlight-label {
+            font-size: 0.75rem;
+            color: #E5E7EB;
+        }
+
+        .auth-divider {
+            border-top: 1px dashed rgba(148, 163, 184, 0.6);
+            margin: 1.5rem 0;
+        }
+
+        .auth-pill {
+            border-radius: 999px;
+            border: 1px solid rgba(191, 219, 254, 0.6);
+            color: #E5E7EB;
+            font-size: 0.78rem;
+            padding: 0.35rem 0.8rem;
+            background-color: rgba(15, 23, 42, 0.35);
+        }
+
+        .auth-logo-mini {
+            position: absolute;
+            right: 1.4rem;
+            top: 1.4rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 999px;
+            border: 1px solid rgba(191, 219, 254, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            color: #E5E7EB;
+            background-color: rgba(15, 23, 42, 0.92);
+        }
+
+        .auth-quote {
+            font-size: 0.78rem;
+            color: #D1D5DB;
+        }
+
+        @media (max-width: 767.98px) {
+            .auth-card {
+                box-shadow: 0 10px 30px rgba(15, 23, 42, 0.7);
+            }
+            .auth-hero-side {
+                display: none;
+            }
+            .auth-form-side {
+                padding: 1.8rem 1.4rem;
+            }
         }
     </style>
 </head>
-<body>
-    <div class="login-container">
-        <div class="login-card">
-            <div class="text-center mb-4">
-                <h2 class="gradient-text mb-2">Welcome Back</h2>
-                <p class="text-muted" style="font-family: 'Poppins', sans-serif;">Sign in to your account</p>
-            </div>
-            
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-family: 'Poppins', sans-serif;">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<body class="auth-body">
+
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center py-4">
+    <div class="auth-wrapper w-100">
+        <div class="row justify-content-center">
+            <div class="col-lg-10 col-xl-9">
+                <div class="auth-card row g-0">
+                    <!-- Form side -->
+                    <div class="col-md-6 auth-form-side">
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="auth-brand-mark">
+                                    <i class="fas fa-bolt"></i>
+                                </div>
+                                <div>
+                                    <div class="auth-brand-title">SWIFTPOS</div>
+                                    <div class="auth-brand-subtitle">Fast checkout · Simple control</div>
+                                </div>
+                            </div>
+                            <span class="auth-badge">
+                                <i class="fas fa-building-columns"></i>
+                                Retail & supermarkets
+                            </span>
+                        </div>
+
+                        <h1 class="auth-title mb-1">Sign in to your till</h1>
+                        <p class="auth-subtitle mb-4">
+                            Enter your staff login to access sales, inventory and reports.
+                        </p>
+
+                        {% if messages %}
+                            <div class="mb-3">
+                                {% for message in messages %}
+                                    <div class="alert alert-{{ message.tags }} mb-2" role="alert">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger mb-3" role="alert">
+                                {% for error in form.non_field_errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <form method="post" novalidate>
+                            {% csrf_token %}
+
+                            <div class="mb-3">
+                                <label for="id_username" class="auth-input-label mb-1">
+                                    Username or Email
+                                </label>
+                                <input
+                                    type="text"
+                                    name="username"
+                                    autofocus
+                                    required
+                                    id="id_username"
+                                    class="form-control form-control-auth"
+                                    placeholder="e.g. cashier01"
+                                    value="{% if form.username.value %}{{ form.username.value }}{% endif %}">
+                                {% if form.username.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.username.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="id_password" class="auth-input-label mb-1">
+                                    Password
+                                </label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    required
+                                    id="id_password"
+                                    class="form-control form-control-auth"
+                                    placeholder="Enter your password">
+                                {% if form.password.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.password.errors.0 }}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="form-check small">
+                                    <input class="form-check-input" type="checkbox" value="1" id="rememberMe">
+                                    <label class="form-check-label text-muted" for="rememberMe">
+                                        Keep me signed in
+                                    </label>
+                                </div>
+                                <!-- reserved for "Forgot password" later -->
+                            </div>
+
+                            <div class="d-grid mb-2">
+                                <button type="submit" class="btn btn-auth-primary">
+                                    <i class="fas fa-right-to-bracket me-1"></i>
+                                    Sign in
+                                </button>
+                            </div>
+
+                            <div class="text-center auth-footer-text mt-3">
+                                Having trouble logging in? Contact your supervisor or system admin.
+                            </div>
+                        </form>
                     </div>
-                {% endfor %}
-            {% endif %}
-            
-            <form method="post">
-                {% csrf_token %}
-                <div class="mb-3">
-                    <label for="{{ form.username.id_for_label }}" class="form-label" style="font-family: 'Poppins', sans-serif;">Username</label>
-                    {{ form.username }}
+
+                    <!-- Hero / info side (desktop only) -->
+                    <div class="col-md-6 auth-hero-side d-none d-md-flex flex-column justify-content-between">
+                        <div>
+                            <div class="auth-logo-mini">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <h2 class="mb-2 text-white">
+                                See your day in one glance.
+                            </h2>
+                            <p class="mb-4" style="font-size: 0.9rem; color: #E5E7EB;">
+                                SwiftPOS keeps your cashiers fast, your stock under control, and your reports always ready.
+                            </p>
+
+                            <div class="d-flex gap-3 mb-3">
+                                <div>
+                                    <div class="auth-highlight-number text-white">2x</div>
+                                    <div class="auth-highlight-label">faster checkout</div>
+                                </div>
+                                <div>
+                                    <div class="auth-highlight-number text-white">99.9%</div>
+                                    <div class="auth-highlight-label">uptime</div>
+                                </div>
+                                <div>
+                                    <div class="auth-highlight-number text-white">24/7</div>
+                                    <div class="auth-highlight-label">access anywhere</div>
+                                </div>
+                            </div>
+
+                            <div class="auth-divider"></div>
+
+                            <div class="d-flex flex-wrap gap-2 mb-2">
+                                <span class="auth-pill">
+                                    <i class="fas fa-store me-1"></i> Track every sale
+                                </span>
+                                <span class="auth-pill">
+                                    <i class="fas fa-boxes-stacked me-1"></i> Live stock balance
+                                </span>
+                                <span class="auth-pill">
+                                    <i class="fas fa-chart-line me-1"></i> Daily summary
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="auth-quote mt-4">
+                            “The moment cashier signs in, we know exactly what is sold, returned, or low in stock.”
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="mb-3">
-                    <label for="{{ form.password.id_for_label }}" class="form-label" style="font-family: 'Poppins', sans-serif;">Password</label>
-                    {{ form.password }}
+
+                <div class="text-center mt-3 auth-footer-text text-light">
+                    &copy; {% now "Y" %} SwiftPOS. Trusted by ambitious shops and supermarkets.
                 </div>
-                
-                <div class="d-grid">
-                    <button type="submit" class="btn gradient-button">Sign In</button>
-                </div>
-            </form>
-            
-            <div class="text-center mt-3">
-                <small class="text-muted" style="font-family: 'Poppins', sans-serif;">Demo: admin/admin, manager/manager, cashier/cashier</small>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+<!-- Bootstrap JS (optional, if needed for alerts, etc.) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

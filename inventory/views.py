@@ -20,7 +20,10 @@ def inventory_dashboard(request):
     
     # Get recent products
     recent_products = Product.objects.order_by('-created_at')[:5]
-    low_stock_products = Product.objects.filter(stock_status__in=['low_stock', 'out_of_stock'])[:5]
+    
+    # Separate low stock and out-of-stock products
+    low_stock_products = Product.objects.filter(stock_status='low_stock')[:5]
+    out_of_stock_products = Product.objects.filter(stock_status='out_of_stock')[:5]
     
     context = {
         'total_products': total_products,
@@ -29,6 +32,7 @@ def inventory_dashboard(request):
         'out_of_stock_count': out_of_stock_count,
         'recent_products': recent_products,
         'low_stock_products': low_stock_products,
+        'out_of_stock_products': out_of_stock_products,  # Added this line
         'user_role': request.user.role,
         'user_name': request.user.get_full_name() or request.user.username,
     }

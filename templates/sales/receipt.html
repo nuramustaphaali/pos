@@ -3,115 +3,213 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt - {{ order.order_number }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background: #f5f5f5;
+            padding: 16px;
+            font-family: Arial, sans-serif;
+            background: #f3f4f6;
         }
-        .receipt {
-            max-width: 400px;
+
+        .receipt-wrapper {
+            max-width: 360px;
             margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
+
+        .receipt {
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 16px 16px 20px;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
+            border: 1px solid #e5e7eb;
+        }
+
         .header {
             text-align: center;
-            border-bottom: 2px solid #4361ee;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
+            border-bottom: 1px dashed #9ca3af;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
         }
+
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .header p {
+            margin: 2px 0;
+            font-size: 11px;
+            color: #4b5563;
+        }
+
         .order-info {
-            margin-bottom: 15px;
+            font-size: 11px;
+            margin-bottom: 10px;
         }
-        .items {
-            margin-bottom: 15px;
+
+        .order-info div {
+            margin-bottom: 2px;
         }
-        .item {
+
+        .section-title {
+            font-size: 11px;
+            font-weight: bold;
+            margin: 10px 0 4px;
+            border-bottom: 1px dashed #d1d5db;
+            padding-bottom: 2px;
+        }
+
+        .item-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
+            font-size: 11px;
+            margin-bottom: 3px;
         }
+
+        .item-row span:first-child {
+            max-width: 220px;
+        }
+
         .totals {
-            border-top: 1px solid #ccc;
-            padding-top: 10px;
+            margin-top: 8px;
+            font-size: 11px;
         }
-        .total-row {
+
+        .totals-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
-        .footer {
-            text-align: center;
-            margin-top: 15px;
-            padding-top: 10px;
-            border-top: 1px solid #ccc;
+
+        .totals-row.total {
+            font-weight: bold;
+            border-top: 1px dashed #d1d5db;
+            margin-top: 5px;
+            padding-top: 5px;
             font-size: 12px;
-            color: #666;
+        }
+
+        .qr-section {
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .qr-section img {
+            margin-top: 6px;
+            width: 120px;
+            height: 120px;
+        }
+
+        .footer {
+            margin-top: 12px;
+            border-top: 1px dashed #d1d5db;
+            padding-top: 8px;
+            text-align: center;
+            font-size: 10px;
+            color: #6b7280;
+        }
+
+        @media print {
+            body {
+                background: #ffffff;
+                padding: 0;
+            }
+            .receipt-wrapper {
+                max-width: 100%;
+                margin: 0;
+            }
+            .receipt {
+                box-shadow: none;
+                border-radius: 0;
+                border: none;
+            }
         }
     </style>
 </head>
 <body>
+<div class="receipt-wrapper">
     <div class="receipt">
+
+        <!-- Header -->
         <div class="header">
-            <h2>{{ system_settings.business_name|default:"Modern POS" }}</h2>
-            <p>{{ system_settings.business_address|default:"" }}</p>
-            <p>{{ system_settings.business_phone|default:"" }}</p>
+            <h1>{{ system_settings.business_name|default:"MODERN POS" }}</h1>
+            {% if system_settings.business_address %}
+                <p>{{ system_settings.business_address }}</p>
+            {% endif %}
+            {% if system_settings.business_phone %}
+                <p>{{ system_settings.business_phone }}</p>
+            {% endif %}
         </div>
-        
+
+        <!-- Order info -->
         <div class="order-info">
-            <div><strong>Order:</strong> {{ order.order_number }}</div>
-            <div><strong>Date:</strong> {{ order.created_at|date:"M d, Y H:i" }}</div>
+            <div><strong>Order No:</strong> {{ order.order_number }}</div>
+            <div><strong>Date:</strong> {{ order.created_at|date:"Y-m-d H:i" }}</div>
             <div><strong>Cashier:</strong> {{ order.cashier }}</div>
             {% if order.customer_name %}
                 <div><strong>Customer:</strong> {{ order.customer_name }}</div>
             {% endif %}
+            <div><strong>Payment:</strong> {{ order.get_payment_method_display }}</div>
         </div>
-        
-        <div class="items">
-            {% for item in order_items %}
-            <div class="item">
+
+        <!-- Items -->
+        <div class="section-title">Items</div>
+        {% for item in order_items %}
+            <div class="item-row">
                 <span>{{ item.quantity }} x {{ item.product.name }}</span>
                 <span>₦{{ item.total_price }}</span>
             </div>
-            {% endfor %}
-        </div>
-        
+        {% endfor %}
+
+        <!-- Totals -->
+        <div class="section-title">Totals</div>
         <div class="totals">
-            <div class="total-row">
-                <span>Subtotal:</span>
+            <div class="totals-row">
+                <span>Subtotal</span>
                 <span>₦{{ order.total_amount }}</span>
             </div>
-            <div class="total-row">
-                <span>Tax:</span>
+            <div class="totals-row">
+                <span>Tax</span>
                 <span>₦{{ order.tax_amount }}</span>
             </div>
-            <div class="total-row">
-                <span><strong>Total:</strong></span>
-                <span><strong>₦{{ order.final_amount }}</strong></span>
-            </div>
-            <div class="total-row">
-                <span>Payment:</span>
-                <span>{{ order.get_payment_method_display }}</span>
+            <div class="totals-row total">
+                <span>Total</span>
+                <span>₦{{ order.final_amount }}</span>
             </div>
         </div>
-        
+
+        <!-- QR Code -->
+        {% if qr_code %}
+        <div class="qr-section">
+            <div style="font-size:11px;">Scan to verify order</div>
+            <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+        </div>
+        {% endif %}
+
+        <!-- Footer -->
         <div class="footer">
-            <p>Thank you for your business!</p>
-            <p>{{ system_settings.receipt_footer|default:"" }}</p>
+            <div>Thank you for your patronage!</div>
+            {% if system_settings.receipt_footer %}
+                <div>{{ system_settings.receipt_footer }}</div>
+            {% endif %}
         </div>
+
     </div>
-    
-    <script>
-        // Auto-print when page loads
-        window.onload = function() {
-            window.print();
-        };
-    </script>
+</div>
+
+<script>
+    window.onload = function () {
+        window.print();
+    };
+</script>
 </body>
 </html>

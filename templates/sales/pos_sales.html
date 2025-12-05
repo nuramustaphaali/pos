@@ -1,376 +1,412 @@
-<!-- templates/sales/pos_sales.html (FIXED SCROLLING - Single scroll area) -->
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}POS Sales - Modern POS{% endblock %}
+{% block title %}POS Terminal - SwiftPOS{% endblock %}
+
+{% block topbar_title %}
+POS Terminal
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid p-0 h-100">
-    <div class="row g-0 h-100">
-        <!-- Main POS Screen -->
-        <div class="col-12 h-100">
-            <div class="pos-container d-flex flex-column h-100">
-                <!-- Header -->
-                <div class="pos-header bg-gradient-primary text-white py-3 px-4 flex-shrink-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h2 class="mb-0"><i class="fas fa-cash-register me-2"></i>POS Terminal</h2>
-                        <div class="text-end">
-                            <div>Cashier: {{ user_name }}</div>
-                            <div class="small">Order: {{ order.order_number }}</div>
+<div class="container-fluid px-0">
+    <!-- Order + cashier overview -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card border-0" style="background: radial-gradient(circle at top left, rgba(79,70,229,.18), transparent 55%), radial-gradient(circle at bottom right, rgba(34,197,94,.14), transparent 45%), var(--sp-surface);">
+                <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div>
+                        <div class="small text-muted mb-1">Active order</div>
+                        <h5 class="mb-1">
+                            <i class="fas fa-receipt me-2"></i>
+                            {{ order.order_number }}
+                        </h5>
+                        <div class="small text-muted">
+                            Cashier: {{ user_name }}
                         </div>
                     </div>
-                </div>
-                
-                <!-- Main Content Area (Single Scrollable Container) -->
-                <div class=" flex-grow-1 overflow-auto" style="
-                    padding-left: 30px !important;
-                    padding-right: 30px !important;
-                ">
-                    <!-- Product Selection Section -->
-                    <div class="pos-left-panel bg-white p-4 border-bottom">
-                        <h5 class="gradient-text mb-4 text-center">Product Selection</h5>
-                        
-                        <!-- Product Search/Selection -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Select Product</label>
-                            <form method="post" class="mb-3" id="productForm">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="add_item">
-                                <select class="form-control gradient-select py-3 px-4 fs-5" name="selected_product" id="selectedProduct">
-                                    <option value="">Choose a product...</option>
-                                    {% for product in products %}
-                                    <option value="{{ product.sku }}" 
-                                            data-name="{{ product.name }}" 
-                                            data-price="{{ product.price }}" 
-                                            data-stock="{{ product.stock_quantity }}">
-                                        {{ product.name }} ({{ product.sku }}) - ₦{{ product.price }} (Stock: {{ product.stock_quantity }})
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </form>
-                        </div>
-                        
-                        <!-- Quantity Input -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Quantity</label>
-                            <input type="number" class="form-control gradient-input py-3 px-4 fs-5" 
-                                   value="1" min="1" id="quantityInput" 
-                                   placeholder="Enter quantity">
-                        </div>
-                        
-                        <!-- Quick Add Buttons -->
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold">Quick Add</label>
-                            <div class="row g-2">
-                                <div class="col-md-4">
-                                    <button class="btn btn-outline-primary w-100 py-3 fs-5" type="button" onclick="quickAdd(1)">Add 1</button>
-                                </div>
-                                <div class="col-md-4">
-                                    <button class="btn btn-outline-success w-100 py-3 fs-5" type="button" onclick="quickAdd(5)">Add 5</button>
-                                </div>
-                                <div class="col-md-4">
-                                    <button class="btn btn-outline-info w-100 py-3 fs-5" type="button" onclick="quickAdd(10)">Add 10</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Selected Product Info -->
-                        <div class="mt-4">
-                            <div class="alert alert-success p-4 text-center">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="text-start">
-                                        <h6 class="mb-1">Selected Product</h6>
-                                        <small>Price: ₦<span id="selectedProductPrice">0.00</span> | Stock: <span id="selectedProductStock">0</span></small>
-                                    </div>
-                                    <button class="btn btn-success py-2 px-4 fs-5" type="button" onclick="addToCart()">
-                                        + Add to Cart
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Barcode Input -->
-                        <div class="mt-4">
-                            <label class="form-label fw-semibold">Barcode (Quick Scan)</label>
-                            <form method="post" class="mb-3">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="add_item">
-                                <input type="text" class="form-control gradient-input py-3 px-4 fs-5" 
-                                       placeholder="Scan barcode..." 
-                                       name="selected_product">
-                            </form>
-                        </div>
-                    </div>
-                    
-                    <!-- Order Items Section -->
-                    <div class="pos-right-panel bg-light p-4">
-                        <!-- Order Items -->
-                        <div class="pos-order-items mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h5 class="gradient-text mb-0">Order Items</h5>
-                                <span class="badge bg-primary fs-5 py-2 px-3">Items: <span id="itemCount">{{ order_items|length }}</span></span>
-                            </div>
-                            
-                            <div id="orderItemsContainer" class="order-items-container bg-white rounded-3 p-3">
-                                {% if order_items %}
-                                    {% for item in order_items %}
-                                    <div class="order-item-card p-3 mb-3 rounded-2 shadow-sm bg-white" 
-                                         style="border-left: 4px solid var(--primary-color);">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <h6 class="mb-0">{{ item.product.name }}</h6>
-                                                <small class="text-muted">{{ item.product.sku }}</small>
-                                            </div>
-                                            <div class="text-end">
-                                                <div class="fw-bold fs-5">₦{{ item.total_price }}</div>
-                                                <small class="text-muted">{{ item.quantity }} x ₦{{ item.unit_price }}</small>
-                                            </div>
-                                        </div>
-                                        <div class="d-flex justify-content-between align-items-center mt-2">
-                                            <small class="text-muted">Stock: {{ item.product.stock_quantity }}</small>
-                                            <form method="post" class="d-inline">
-                                                {% csrf_token %}
-                                                <input type="hidden" name="action" value="remove_item">
-                                                <input type="hidden" name="item_id" value="{{ item.id }}">
-                                                <button class="btn btn-sm btn-outline-danger py-1 px-2" type="submit">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                    {% endfor %}
-                                {% else %}
-                                    <div class="text-center py-5 text-muted">
-                                        <i class="fas fa-shopping-cart fa-4x mb-3"></i>
-                                        <p class="fs-4">No items in cart</p>
-                                    </div>
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <!-- Totals Section -->
-                        <div class="pos-totals-section bg-white rounded-3 p-4 mb-4 shadow-sm">
-                            <div class="row g-3">
-                                <div class="col-6">
-                                    <div class="mb-2">
-                                        <small class="text-muted">Subtotal</small>
-                                        <div class="h5 mb-0 fs-4">₦{{ subtotal|floatformat:2 }}</div>
-                                    </div>
-                                    <div class="mb-2">
-                                        <small class="text-muted">Tax (7.5%)</small>
-                                        <div class="h5 mb-0 fs-4">₦{{ tax_amount|floatformat:2 }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="mb-2">
-                                        <small class="text-muted">Total</small>
-                                        <div class="h4 text-success mb-0 fs-3">₦{{ final_total|floatformat:2 }}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Payment Section -->
-                        <div class="pos-payment-section bg-white rounded-3 p-4 mb-4 shadow-sm">
-                            <form method="post">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="complete_order">
-                                <div class="row g-3">
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Payment Method</label>
-                                        <select class="form-control gradient-select py-3 px-4 fs-5" name="payment_method">
-                                            <option value="cash">Cash</option>
-                                            <option value="transfer">Bank Transfer</option>
-                                            <option value="pos">POS/ATM Card</option>
-                                            <option value="mobile_money">Mobile Money</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Reference Number (Optional)</label>
-                                        <input type="text" class="form-control gradient-input py-3 px-4 fs-5" 
-                                               placeholder="Transaction reference" name="reference_number">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mt-3">
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Customer (Optional)</label>
-                                        <input type="text" class="form-control gradient-input py-3 px-4 fs-5" 
-                                               placeholder="Customer name" name="customer_name">
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label fw-semibold">Customer Phone (Optional)</label>
-                                        <input type="text" class="form-control gradient-input py-3 px-4 fs-5" 
-                                               placeholder="Customer phone" name="customer_phone">
-                                    </div>
-                                </div>
-                                <div class="mt-4">
-                                    <button class="btn gradient-button w-100 py-3 fs-4" type="submit">
-                                        <i class="fas fa-check-circle me-2"></i>Complete Order
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                        
-                        <!-- Action Buttons -->
-                        <div class="pos-actions-section d-grid gap-3">
-                            <form method="post" class="mb-2">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="clear_order">
-                                <button class="btn btn-light w-100 py-3 fs-4" type="submit">
-                                    <i class="fas fa-trash me-2"></i>Clear Order
-                                </button>
-                            </form>
-                        </div>
+                    <div class="d-flex flex-wrap gap-2 align-items-center">
+                        <span class="badge rounded-pill bg-light text-muted border">
+                            <i class="fas fa-box-open me-1"></i>
+                            <span id="itemCount">{{ order_items|length }}</span> item{{ order_items|length|pluralize }}
+                        </span>
+                        <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle">
+                            Total: <span class="ms-1 fw-semibold">₦{{ final_total|floatformat:2 }}</span>
+                        </span>
+                        <a href="{% url 'sales:daily_dashboard' %}" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+                            <i class="fas fa-chart-line"></i> Today’s summary
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Main POS layout -->
+    <div class="row g-3">
+        <!-- LEFT: Products / search / quantity -->
+        <div class="col-lg-8">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                        <i class="fas fa-boxes-stacked"></i> Product Selection
+                    </h6>
+                    <span class="small text-muted">
+                        Choose product & quantity, then add to cart
+                    </span>
+                </div>
+                <div class="card-body">
+                    <!-- Product select -->
+                    <form method="post" id="productForm" class="mb-3">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="add_item">
+                        <input type="hidden" name="quantity" id="quantityField" value="1">
+
+                        <!-- Searchable Product Select -->
+                        <div class="mb-3">
+                            <label for="selectedProduct" class="form-label fw-semibold small">
+                                Product
+                            </label>
+                            <select
+                                class="form-select"
+                                name="selected_product"
+                                id="selectedProduct"
+                                required>
+                                <option value="">Search or choose product…</option>
+                                {% for product in products %}
+                                    <option
+                                        value="{{ product.sku }}"
+                                        data-name="{{ product.name }}"
+                                        data-price="{{ product.price }}"
+                                        data-stock="{{ product.stock_quantity }}">
+                                        {{ product.name }} ({{ product.sku }}) - ₦{{ product.price }} | Stock: {{ product.stock_quantity }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text small text-muted">
+                                Use SKU or name to quickly find items.
+                            </div>
+                        </div>
+
+                        <!-- Quantity + quick add -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="quantityInput" class="form-label fw-semibold small">
+                                    Quantity
+                                </label>
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="quantityInput"
+                                    min="1"
+                                    value="1"
+                                    placeholder="Enter quantity">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold small">
+                                    Quick add
+                                </label>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="quickAdd(1)">+1</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="quickAdd(5)">+5</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="quickAdd(10)">+10</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selected product info + add to cart -->
+                        <div class="mt-4 p-3 rounded-3" style="background:var(--sp-surface-muted);">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <div>
+                                    <div class="small text-muted mb-1">Selected product</div>
+                                    <div class="small">
+                                        Price: ₦<span id="selectedProductPrice">0.00</span> ·
+                                        Stock: <span id="selectedProductStock">0</span>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-primary d-flex align-items-center gap-2" onclick="addToCart()">
+                                        <i class="fas fa-cart-plus"></i>
+                                        Add to cart
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Optional: instructions / tips -->
+                    <div class="mt-3 small text-muted">
+                        Tip: keep the right side open on totals while the cashier adds items from here.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Cart / totals / payment -->
+        <div class="col-lg-4">
+            <div class="position-sticky" style="top: 80px;">
+                <!-- Cart items -->
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                            <i class="fas fa-shopping-basket"></i> Current Cart
+                        </h6>
+                        <span class="badge bg-light text-muted border small">
+                            {{ order_items|length }} item{{ order_items|length|pluralize }}
+                        </span>
+                    </div>
+                    <div class="card-body" style="max-height: calc(100vh - 320px); overflow-y: auto;" id="orderItemsContainer">
+                        {% if order_items %}
+                            {% for item in order_items %}
+                                <div class="d-flex justify-content-between align-items-start mb-3 pb-2 border-bottom border-light-subtle">
+                                    <div>
+                                        <div class="fw-semibold small">{{ item.product.name }}</div>
+                                        <div class="text-muted small">{{ item.product.sku }}</div>
+                                        <div class="text-muted small">
+                                            {{ item.quantity }} × ₦{{ item.unit_price }}
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="fw-semibold small text-price">₦{{ item.total_price }}</div>
+                                        <form method="post" class="mt-1">
+                                            {% csrf_token %}
+                                            <input type="hidden" name="action" value="remove_item">
+                                            <input type="hidden" name="item_id" value="{{ item.id }}">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted small mb-0 text-center">
+                                No items in cart yet. Add products from the left panel.
+                            </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Totals -->
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Subtotal</span>
+                            <span class="small">₦{{ subtotal|floatformat:2 }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="small text-muted">Tax (7.5%)</span>
+                            <span class="small">₦{{ tax_amount|floatformat:2 }}</span>
+                        </div>
+                        <hr class="my-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-semibold">Total</span>
+                            <span class="price text-success">₦{{ final_total|floatformat:2 }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <h6 class="card-title mb-0 d-flex align-items-center gap-2">
+                            <i class="fas fa-wallet"></i> Payment
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="complete_order">
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold">Payment method</label>
+                                <select class="form-select" name="payment_method" required>
+                                    <option value="cash">Cash</option>
+                                    <option value="transfer">Bank Transfer</option>
+                                    <option value="pos">POS / Card</option>
+                                    <option value="mobile_money">Mobile Money</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold">Reference (optional)</label>
+                                <input
+                                    type="text"
+                                    name="reference_number"
+                                    class="form-control"
+                                    placeholder="Transaction reference">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold">Customer (optional)</label>
+                                <input
+                                    type="text"
+                                    name="customer_name"
+                                    class="form-control"
+                                    placeholder="Customer name">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label small fw-semibold">Customer phone (optional)</label>
+                                <input
+                                    type="text"
+                                    name="customer_phone"
+                                    class="form-control"
+                                    placeholder="Customer phone">
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary d-flex justify-content-center align-items-center gap-2">
+                                    <i class="fas fa-check-circle"></i>
+                                    Complete order
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Clear order -->
+                <div class="card">
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="clear_order">
+                            <button type="submit" class="btn btn-outline-danger w-100 d-flex justify-content-center align-items-center gap-2">
+                                <i class="fas fa-trash"></i>
+                                Clear order
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div> <!-- /position-sticky -->
+        </div>
+    </div>
 </div>
 {% endblock %}
-
-{% block extra_css %}
-<style>
-    .pos-container {
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .pos-header {
-        flex-shrink: 0;
-    }
-    
-    .pos-main-content {
-        flex-grow: 1;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .pos-left-panel {
-        background: white;
-        border-bottom: 1px solid var(--border-color);
-        flex-shrink: 0;
-    }
-    
-    .pos-right-panel {
-        background: #f8f9fa;
-        flex-shrink: 0;
-    }
-    
-    .order-items-container {
-        border: 1px solid var(--border-color);
-        border-radius: 12px;
-        background: white;
-        max-height: 200px;
-        overflow-y: auto;
-    }
-    
-    .order-item-card {
-        border-left: 4px solid var(--primary-color);
-        transition: all 0.2s ease;
-        margin-bottom: 12px;
-    }
-    
-    .order-item-card:hover {
-        transform: translateX(3px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .pos-container {
-            height: 100vh;
-        }
-        
-        .pos-main-content {
-            flex-direction: column;
-        }
-        
-        .pos-left-panel {
-            border-bottom: 1px solid var(--border-color);
-        }
-        
-        .btn, .form-control {
-            font-size: 1rem !important;
-            padding: 0.75rem 1rem !important;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block extra_js %}
 <script>
-// Update selected product info when dropdown changes
-document.getElementById('selectedProduct').addEventListener('change', function() {
-    const selectedOption = this.options[this.selectedIndex];
-    if (selectedOption.value) {
-        document.getElementById('selectedProductPrice').textContent = selectedOption.dataset.price;
-        document.getElementById('selectedProductStock').textContent = selectedOption.dataset.stock;
-    } else {
-        document.getElementById('selectedProductPrice').textContent = '0.00';
-        document.getElementById('selectedProductStock').textContent = '0';
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize Select2 on the product dropdown
+    $('#selectedProduct').select2({
+        placeholder: "Search or choose product…",
+        allowClear: true,
+        width: '100%',
+        dropdownAutoWidth: true
+    });
+
+    const productSelect = document.getElementById('selectedProduct');
+    const priceSpan = document.getElementById('selectedProductPrice');
+    const stockSpan = document.getElementById('selectedProductStock');
+
+    function updateSelectedInfo() {
+        if (!productSelect || !priceSpan || !stockSpan) return;
+        const opt = productSelect.options[productSelect.selectedIndex];
+        if (opt && opt.value) {
+            priceSpan.textContent = opt.dataset.price || '0.00';
+            stockSpan.textContent = opt.dataset.stock || '0';
+        } else {
+            priceSpan.textContent = '0.00';
+            stockSpan.textContent = '0';
+        }
     }
-});
 
-function addToCart() {
-    const selectedProduct = document.getElementById('selectedProduct').value;
-    const quantity = document.getElementById('quantityInput').value;
-    
-    if (!selectedProduct) {
-        alert('Please select a product first');
-        return;
+    if (productSelect) {
+        productSelect.addEventListener('change', updateSelectedInfo);
+        updateSelectedInfo();
     }
-    
-    // Create hidden form and submit
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = '';
-    
-    // Add CSRF token
-    const csrfInput = document.createElement('input');
-    csrfInput.type = 'hidden';
-    csrfInput.name = 'csrfmiddlewaretoken';
-    csrfInput.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    form.appendChild(csrfInput);
-    
-    // Add action
-    const actionInput = document.createElement('input');
-    actionInput.type = 'hidden';
-    actionInput.name = 'action';
-    actionInput.value = 'add_item';
-    form.appendChild(actionInput);
-    
-    // Add selected product
-    const productInput = document.createElement('input');
-    productInput.type = 'hidden';
-    productInput.name = 'selected_product';
-    productInput.value = selectedProduct;
-    form.appendChild(productInput);
-    
-    // Add quantity
-    const quantityInput = document.createElement('input');
-    quantityInput.type = 'hidden';
-    quantityInput.name = 'quantity';
-    quantityInput.value = quantity;
-    form.appendChild(quantityInput);
-    
-    document.body.appendChild(form);
-    form.submit();
-}
 
-function quickAdd(quantity) {
-    document.getElementById('quantityInput').value = quantity;
-    addToCart();
-}
-
-// Auto-scroll to bottom when page loads
-document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('orderItemsContainer');
     if (container) {
         container.scrollTop = container.scrollHeight;
     }
 });
+
+function addToCart() {
+    const productSelect = document.getElementById('selectedProduct');
+    const quantityInput = document.getElementById('quantityInput');
+    const quantityField = document.getElementById('quantityField');
+    const form = document.getElementById('productForm');
+
+    if (!productSelect || !quantityInput || !quantityField || !form) return;
+
+    if (!productSelect.value) {
+        alert('Please select a product.');
+        return;
+    }
+
+    let qty = parseInt(quantityInput.value || '1', 10);
+    if (isNaN(qty) || qty <= 0) {
+        alert('Quantity must be at least 1.');
+        return;
+    }
+
+    quantityField.value = qty;
+    form.submit();
+}
+
+function quickAdd(qty) {
+    const quantityInput = document.getElementById('quantityInput');
+    if (!quantityInput) return;
+    quantityInput.value = qty;
+    addToCart();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const productSelect = document.getElementById('selectedProduct');
+    const priceSpan = document.getElementById('selectedProductPrice');
+    const stockSpan = document.getElementById('selectedProductStock');
+
+    function updateSelectedInfo() {
+        if (!productSelect || !priceSpan || !stockSpan) return;
+        const opt = productSelect.options[productSelect.selectedIndex];
+        if (opt && opt.value) {
+            priceSpan.textContent = opt.dataset.price || '0.00';
+            stockSpan.textContent = opt.dataset.stock || '0';
+        } else {
+            priceSpan.textContent = '0.00';
+            stockSpan.textContent = '0';
+        }
+    }
+
+    if (productSelect) {
+        productSelect.addEventListener('change', updateSelectedInfo);
+        updateSelectedInfo();
+    }
+
+    const container = document.getElementById('orderItemsContainer');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+});
+
+function addToCart() {
+    const productSelect = document.getElementById('selectedProduct');
+    const quantityInput = document.getElementById('quantityInput');
+    const quantityField = document.getElementById('quantityField');
+    const form = document.getElementById('productForm');
+
+    if (!productSelect || !quantityInput || !quantityField || !form) return;
+
+    if (!productSelect.value) {
+        alert('Please select a product.');
+        return;
+    }
+
+    let qty = parseInt(quantityInput.value || '1', 10);
+    if (isNaN(qty) || qty <= 0) {
+        alert('Quantity must be at least 1.');
+        return;
+    }
+
+    quantityField.value = qty;
+    form.submit();
+}
+
+function quickAdd(qty) {
+    const quantityInput = document.getElementById('quantityInput');
+    if (!quantityInput) return;
+    quantityInput.value = qty;
+    addToCart();
+}
 </script>
 {% endblock %}

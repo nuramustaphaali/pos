@@ -1,163 +1,165 @@
-<!-- templates/inventory/edit_product.html -->
 {% extends 'core/base.html' %}
 {% load static %}
 
-{% block title %}Edit Product - Modern POS{% endblock %}
+{% block title %}Edit Product - SwiftPOS{% endblock %}
+
+{% block topbar_title %}
+Edit Product
+{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row">
-      
-        
-        <div class="col-md-9">
-            <div class="p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h1 class="gradient-text">Edit Product: {{ product.name }}</h1>
-                    <div class="btn-group">
-                        <a href="{% url 'inventory:product_detail' product.id %}" class="btn btn-outline-light">
-                            <i class="fas fa-arrow-left me-2"></i>Back to Product
-                        </a>
-                        <a href="{% url 'inventory:product_list' %}" class="btn btn-outline-secondary">
-                            <i class="fas fa-list me-2"></i>Products List
-                        </a>
+<div class="container-fluid px-0">
+
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+        <div>
+            <h5 class="mb-0">Edit Product</h5>
+            <div class="text-muted small">Updating: {{ product.name }}</div>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'inventory:product_detail' product.id %}"
+               class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Back to product
+            </a>
+            <a href="{% url 'inventory:product_list' %}"
+               class="btn btn-outline-secondary btn-sm">
+                Products
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <!-- Basic info -->
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.name.id_for_label }}" class="form-label small fw-semibold">
+                            Product Name
+                        </label>
+                        {{ form.name }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.sku.id_for_label }}" class="form-label small fw-semibold">
+                            SKU / Code
+                        </label>
+                        {{ form.sku }}
+                    </div>
+                    <div class="col-md-3">
+                        <label for="{{ form.barcode.id_for_label }}" class="form-label small fw-semibold">
+                            Barcode (optional)
+                        </label>
+                        {{ form.barcode }}
                     </div>
                 </div>
-                
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert" style="font-family: 'Poppins', sans-serif;">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+
+                <!-- Category + prices -->
+                <div class="row g-3 mt-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.category.id_for_label }}" class="form-label small fw-semibold">
+                            Category
+                        </label>
+                        {{ form.category }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.price.id_for_label }}" class="form-label small fw-semibold">
+                            Selling Price (₦)
+                        </label>
+                        {{ form.price }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.cost_price.id_for_label }}" class="form-label small fw-semibold">
+                            Cost Price (₦)
+                        </label>
+                        {{ form.cost_price }}
+                    </div>
+                </div>
+
+                <!-- Stock -->
+                <div class="row g-3 mt-3">
+                    <div class="col-md-4">
+                        <label for="{{ form.stock_quantity.id_for_label }}" class="form-label small fw-semibold">
+                            Current Stock
+                        </label>
+                        {{ form.stock_quantity }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.minimum_stock.id_for_label }}" class="form-label small fw-semibold">
+                            Minimum Stock Alert
+                        </label>
+                        {{ form.minimum_stock }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.supplier.id_for_label }}" class="form-label small fw-semibold">
+                            Supplier (optional)
+                        </label>
+                        {{ form.supplier }}
+                    </div>
+                </div>
+
+                <!-- Description + image -->
+                <div class="row g-3 mt-3">
+                    <div class="col-md-8">
+                        <label for="{{ form.description.id_for_label }}" class="form-label small fw-semibold">
+                            Description (optional)
+                        </label>
+                        {{ form.description }}
+                    </div>
+                    <div class="col-md-4">
+                        <label for="{{ form.image.id_for_label }}" class="form-label small fw-semibold">
+                            Product Image (optional)
+                        </label>
+                        <div class="mb-2">
+                            {{ form.image }}
                         </div>
-                    {% endfor %}
-                {% endif %}
-                
-                <div class="card shadow-card rounded-card">
-                    <div class="card-body">
-                        <form method="post" enctype="multipart/form-data">
-                            {% csrf_token %}
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.name.id_for_label }}" class="form-label">Product Name</label>
-                                        {{ form.name }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.sku.id_for_label }}" class="form-label">SKU/Code</label>
-                                        {{ form.sku }}
-                                    </div>
-                                </div>
+
+                        {% if product.image %}
+                            <div class="ratio ratio-4x3 mb-2">
+                                <img src="{{ product.image.url }}"
+                                     class="img-fluid rounded"
+                                     style="object-fit: cover;"
+                                     alt="{{ product.name }}">
                             </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.barcode.id_for_label }}" class="form-label">Barcode (Optional)</label>
-                                        {{ form.barcode }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.category.id_for_label }}" class="form-label">Category</label>
-                                        {{ form.category }}
-                                    </div>
-                                </div>
+                            <div class="small text-muted">
+                                Current image preview. Upload a new file to replace it.
                             </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.price.id_for_label }}" class="form-label">Selling Price (₦)</label>
-                                        {{ form.price }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.cost_price.id_for_label }}" class="form-label">Cost Price (₦)</label>
-                                        {{ form.cost_price }}
-                                    </div>
-                                </div>
+                        {% else %}
+                            <div class="border rounded-3 d-flex align-items-center justify-content-center"
+                                 style="background: var(--sp-surface-muted); height: 160px;">
+                                <span class="small text-muted text-center">
+                                    No image uploaded yet.
+                                </span>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.stock_quantity.id_for_label }}" class="form-label">Current Stock</label>
-                                        {{ form.stock_quantity }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.minimum_stock.id_for_label }}" class="form-label">Minimum Stock Level</label>
-                                        {{ form.minimum_stock }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.unit_of_measure.id_for_label }}" class="form-label">Unit of Measure</label>
-                                        {{ form.unit_of_measure }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.status.id_for_label }}" class="form-label">Status</label>
-                                        {{ form.status }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.supplier.id_for_label }}" class="form-label">Supplier (Optional)</label>
-                                        {{ form.supplier }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.expiry_date.id_for_label }}" class="form-label">Expiry Date (Optional)</label>
-                                        {{ form.expiry_date }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.weight.id_for_label }}" class="form-label">Weight (kg) (Optional)</label>
-                                        {{ form.weight }}
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="{{ form.dimensions.id_for_label }}" class="form-label">Dimensions (LxWxH cm) (Optional)</label>
-                                        {{ form.dimensions }}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
-                                {{ form.description }}
-                            </div>
-                            <div class="mb-3">
-                                <label for="{{ form.image.id_for_label }}" class="form-label">Product Image (Optional)</label>
-                                {{ form.image }}
-                                {% if product.image %}
-                                    <div class="mt-2">
-                                        <img src="{{ product.image.url }}" alt="Current Image" class="img-thumbnail" style="max-height: 100px;">
-                                    </div>
-                                {% endif %}
-                            </div>
-                            
-                            <div class="d-flex justify-content-end gap-2">
-                                <a href="{% url 'inventory:product_detail' product.id %}" class="btn btn-outline-secondary">Cancel</a>
-                                <button type="submit" class="btn gradient-button">
-                                    <i class="fas fa-save me-2"></i>Update Product
-                                </button>
-                            </div>
-                        </form>
+                        {% endif %}
                     </div>
                 </div>
-            </div>
+
+                <div class="mt-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <span class="small text-muted">
+                        Be sure prices and stock are correct before saving.
+                    </span>
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'inventory:product_detail' product.id %}"
+                           class="btn btn-outline-secondary btn-sm">
+                            Cancel
+                        </a>
+                        <button type="submit"
+                                class="btn btn-primary btn-sm d-flex align-items-center gap-2">
+                            <i class="fas fa-save"></i> Save changes
+                        </button>
+                    </div>
+                </div>
+
+            </form>
         </div>
     </div>
 </div>
