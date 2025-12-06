@@ -13,7 +13,7 @@ admin.site.has_permission = superuser_only
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('adminBest/', admin.site.urls),
     path('', include('core.urls')),
     path('inventory/', include('inventory.urls')),
     path('sales/', include('sales.urls')),

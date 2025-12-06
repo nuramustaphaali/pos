@@ -810,3 +810,26 @@ body.sidebar-mobile-open .swiftpos-overlay {
         transform: none !important;
     }
 }
+
+/* Put QR and digital seal side by side */
+.receipt-bottom-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 12px;          /* space between QR and seal */
+    margin-top: 8px;
+}
+
+.receipt-bottom-row .qr-bottom {
+    flex: 0 0 auto !important;
+}
+
+.receipt-bottom-row .qr-bottom img {
+    max-width: 90px !important;    /* adjust as you like */
+    height: auto;
+}
+
+.receipt-bottom-row .order-right {
+    flex: 1 1 auto !important;
+    text-align: right;
+}

@@ -95,7 +95,7 @@
         .order-header-row {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: flex-end;
             gap: 6px;
             margin: 4px 0 6px;
         }
@@ -122,9 +122,10 @@
 
         /* Right side: seal */
         .order-right {
+            padding-right: 30px !important;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: flex-end; !important;
             gap: 4px;
         }
 
@@ -241,11 +242,12 @@
         }
 
         /* QR at bottom */
-        .qr-bottom {
+        /*.qr-bottom {
             margin-top: 6px;
             padding-top: 4px;
             border-top: 1px dashed #E5E7EB;
             text-align: center;
+            align-items: center !important;
             page-break-inside: avoid;
         }
 
@@ -258,7 +260,7 @@
         .qr-bottom .small {
             font-size: 8px;
             color: var(--sp-text-muted);
-        }
+        }*/
 
         /* Footer */
         .footer {
@@ -292,6 +294,41 @@
                 display: none;
             }
         }
+
+        /* Put QR and digital seal side by side at the bottom */
+.receipt-bottom-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-center;
+    gap: 8px;
+    margin-top: 6px;
+    padding-top: 4px;
+    border-top: 1px dashed #E5E7EB;
+}
+
+/* Override the "full-width section" look when inside the row */
+.receipt-bottom-row .qr-bottom {
+    margin-top: 0;
+    padding-top: 0;
+    padding-left: 20px !important;
+    align-items: center !important;
+    border-top: none;
+    text-align: left;
+    flex: 0 0 auto;
+}
+
+.receipt-bottom-row .qr-bottom img {
+    width: 70px;
+    height: 70px;
+}
+
+.receipt-bottom-row .order-right {
+    flex: 1 1 auto;
+/*    align-items: flex-end;*/
+    text-align: right;
+}
+
+
     </style>
 </head>
 <body>
@@ -339,17 +376,7 @@
                 </div>
 
                 <!-- Right: digital seal -->
-              <!---  <div class="order-right">
-                    <div class="digital-seal">
-                        <div class="digital-seal-logo">
-                            <img src="{% static 'images/logo.png' %}" alt="Logo">
-                        </div>
-                        <div id="verification-code" class="digital-seal-code">••••••••••</div>
-                    </div>
-                    <div class="digital-seal-note">
-                        Use this code with the order number to confirm inside SwiftPOS.
-                    </div>
-                </div>--->
+                
             </div>
 
             <!-- Items -->
@@ -393,17 +420,31 @@
                 </div>
             </div>
 
-            <!-- QR at bottom -->
-            {% if qr_code %}
-                <div class="qr-bottom">
-                    <!---<div class="small">Scan to verify / view details</div>--->
-                    <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+            <div class="receipt-bottom-row">
+                {% if qr_code %}
+                    <div class="qr-bottom">
+                        <!---<div class="small">Scan to verify / view details</div>--->
+                        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+                    </div>
+                {% endif %}
+
+                <div class="order-right">
+                    <div class="digital-seal">
+                        <div class="digital-seal-logo">
+                            <img src="{% static 'images/logo.png' %}" alt="Logo">
+                        </div>
+                        <div id="verification-code" class="digital-seal-code">••••••••••</div>
+                    </div>
+                    <!-- <div class="digital-seal-note">
+                        Use this code with the order number to confirm inside SwiftPOS.
+                    </div> -->
                 </div>
-            {% endif %}
+            </div>
+
 
             <!-- Footer -->
             <div class="footer">
-                <p>Thank you for your patronage!</p>
+                <!-- <p>Thank you for your patronage!</p> -->
                 {% if system_settings.receipt_footer %}
                     <p>{{ system_settings.receipt_footer }}</p>
                 {% endif %}

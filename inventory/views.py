@@ -426,3 +426,335 @@ def product_detail(request, product_id):
         'user_name': request.user.get_full_name() or request.user.username,
     }
     return render(request, 'inventory/product_detail.html', context)
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.core.paginator import Paginator
+
+import csv
+import io
+
+from .models import Product, ProductCategory, InventoryTransaction, StockAdjustment
+from .forms import ProductForm, ProductCategoryForm
+
+import datetime
+from django.http import HttpResponse
+
+
+import csv
+import io
+from decimal import Decimal, InvalidOperation
+
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+
+from .models import ProductCategory, Product, InventoryTransaction
+
+
+@login_required
+def product_bulk_import(request):
+    """Bulk import products from a CSV file."""
+    if request.method == "POST":
+        upload = request.FILES.get("file")
+        if not upload:
+            messages.error(request, "Please choose a CSV file to upload.")
+            return redirect("inventory:product_bulk_import")
+
+        if not upload.name.lower().endswith(".csv"):
+            messages.error(request, "Only CSV files (.csv) are supported.")
+            return redirect("inventory:product_bulk_import")
+
+        try:
+            data = upload.read().decode("utf-8")
+        except UnicodeDecodeError:
+            messages.error(request, "Unable to read file. Please use UTF-8 encoded CSV.")
+            return redirect("inventory:product_bulk_import")
+
+        f = io.StringIO(data)
+        reader = csv.DictReader(f)
+
+        created_count = 0
+        updated_count = 0
+        errors = []
+
+        for index, row in enumerate(reader, start=2):
+            try:
+                # Extract and validate required fields
+                name = (row.get("name") or "").strip()
+                sku = (row.get("sku") or "").strip()
+                category_name = (row.get("category") or "").strip()
+                cost_price = row.get("cost_price", "").strip()
+                stock_quantity = row.get("stock_quantity", "").strip()
+                minimum_stock = row.get("minimum_stock", "").strip()
+                description = (row.get("description") or "").strip()
+
+                if not name:
+                    raise ValueError("Missing product name.")
+
+                # Validate SKU uniqueness
+                if not sku:
+                    raise ValueError("Missing SKU.")
+
+                # Validate category
+                category = None
+                if category_name:
+                    category, _ = ProductCategory.objects.get_or_create(name=category_name)
+
+                # Convert numeric values
+                def to_decimal(value, default=Decimal("0.00")):
+                    value = value.strip() if value else ""
+                    if not value:
+                        return default
+                    try:
+                        return Decimal(value)
+                    except InvalidOperation:
+                        raise ValueError(f"Invalid decimal value: {value}")
+
+                def to_int(value, default=0):
+                    value = value.strip() if value else ""
+                    if not value:
+                        return default
+                    try:
+                        return int(float(value))
+                    except ValueError:
+                        raise ValueError(f"Invalid integer value: {value}")
+
+                cost_price = to_decimal(cost_price)
+                stock_quantity = to_int(stock_quantity)
+                minimum_stock = to_int(minimum_stock)
+
+                # Lookup product by SKU
+                product, created = Product.objects.get_or_create(
+                    sku=sku,
+                    defaults={
+                        "name": name,
+                        "category": category,
+                        "cost_price": cost_price,
+                        "stock_quantity": stock_quantity,
+                        "minimum_stock": minimum_stock,
+                        "description": description,
+                        "price": cost_price,  # Default price = cost price
+                    },
+                )
+
+                if not created:
+                    # Update existing product
+                    product.name = name
+                    if category:
+                        product.category = category
+                    product.cost_price = cost_price
+                    product.stock_quantity += stock_quantity  # Add to existing stock
+                    product.minimum_stock = minimum_stock
+                    product.description = description
+                    product.save()
+                    updated_count += 1
+                else:
+                    created_count += 1
+                    if stock_quantity > 0:
+                        InventoryTransaction.objects.create(
+                            product=product,
+                            transaction_type="in",
+                            quantity=stock_quantity,
+                            reference=f"Bulk import initial stock for {product.name}",
+                            notes="Initial stock from CSV import",
+                            created_by=request.user.username,
+                        )
+
+            except Exception as e:
+                errors.append(f"Row {index}: {e}")
+
+        msg = f"Bulk import completed. Created: {created_count}, Updated: {updated_count}."
+        if errors:
+            msg += f" {len(errors)} rows had errors."
+        messages.success(request, msg)
+        if errors:
+            preview = " | ".join(errors[:3])
+            messages.warning(request, f"Some rows could not be imported: {preview}")
+
+        return redirect("inventory:product_list")
+
+    context = {
+        "user_role": getattr(request.user, "role", None),
+        "user_name": request.user.get_full_name() or request.user.username,
+    }
+    return render(request, "inventory/product_bulk_import.html", context)
+    
+
+@login_required
+def product_import_template(request):
+    """Download a CSV template for bulk product import."""
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="product_import_template.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(
+        ["name", "sku", "category", "cost_price", "stock_quantity", "minimum_stock", "description"]
+    )
+    writer.writerow(
+        ["Coca Cola 50cl", "CC50", "Drinks", "500", "150", "24", "Yayi"]
+    )
+    writer.writerow(
+        ["Coca Cola 30cl", "CC30", "Drinks", "350", "150", "24", "Okay"]
+    )
+    return response
+
+
+@login_required
+def product_bulk_export(request):
+    """Export all products as CSV."""
+    response = HttpResponse(content_type="text/csv")
+    filename = f"products_{datetime.date.today().isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "id",
+            "name",
+            "sku",
+            "category",
+            "cost_price",
+            # "selling_price",
+            "stock_quantity",
+            "minimum_stock",
+            "status",
+            "stock_status",
+            "created_at",
+            "updated_at",
+        ]
+    )
+
+    products = Product.objects.select_related("category").all().order_by("name")
+    for p in products:
+        writer.writerow(
+            [
+                p.id,
+                p.name,
+                p.sku or "",
+                p.category.name if p.category else "",
+                p.cost_price,
+                # p.selling_price,
+                p.stock_quantity,
+                p.minimum_stock,
+                p.status,
+                p.stock_status,
+                p.created_at,
+                p.updated_at,
+            ]
+        )
+
+    return response
+
+
+@login_required
+def category_bulk_export(request):
+    """Export all product categories as CSV."""
+    response = HttpResponse(content_type="text/csv")
+    filename = f"categories_{datetime.date.today().isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow(["id", "name", "description", "color_code", "icon", "created_at", "updated_at"])
+
+    for c in ProductCategory.objects.all().order_by("name"):
+        writer.writerow(
+            [c.id, c.name, c.description, c.color_code, c.icon, c.created_at, c.updated_at]
+        )
+
+    return response
+
+
+@login_required
+def inventory_transactions_export(request):
+    """Export all inventory transactions as CSV."""
+    response = HttpResponse(content_type="text/csv")
+    filename = f"inventory_transactions_{datetime.date.today().isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "id",
+            "product_name",
+            "product_sku",
+            "transaction_type",
+            "quantity",
+            "reference",
+            "notes",
+            "created_by",
+            "created_at",
+        ]
+    )
+
+    txns = InventoryTransaction.objects.select_related("product").all().order_by("-created_at")
+    for t in txns:
+        writer.writerow(
+            [
+                t.id,
+                t.product.name if t.product else "",
+                t.product.sku if t.product else "",
+                t.transaction_type,
+                t.quantity,
+                t.reference,
+                t.notes,
+                t.created_by,
+                t.created_at,
+            ]
+        )
+
+    return response
+
+
+@login_required
+def stock_adjustments_export(request):
+    """Export all stock adjustments as CSV."""
+    response = HttpResponse(content_type="text/csv")
+    filename = f"stock_adjustments_{datetime.date.today().isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "id",
+            "product_name",
+            "product_sku",
+            "adjustment_type",
+            "quantity",
+            "reason",
+            "reference_number",
+            "performed_by",
+            "created_at",
+        ]
+    )
+
+    adjustments = StockAdjustment.objects.select_related("product").all().order_by("-created_at")
+    for adj in adjustments:
+        writer.writerow(
+            [
+                adj.id,
+                adj.product.name if adj.product else "",
+                adj.product.sku if adj.product else "",
+                adj.adjustment_type,
+                adj.quantity,
+                adj.reason,
+                adj.reference_number,
+                adj.performed_by,
+                adj.created_at,
+            ]
+        )
+
+    return response
+
+
+@login_required
+def export_center(request):
+    """Central page where user can export inventory & sales data."""
+    context = {
+        "user_role": getattr(request.user, "role", None),
+        "user_name": request.user.get_full_name() or request.user.username,
+    }
+    return render(request, "inventory/export_center.html", context)

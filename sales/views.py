@@ -54,7 +54,7 @@ def pos_sales(request):
     # Create new order if not exists in session
     if 'current_order_id' not in request.session:
         order = POSOrder.objects.create(
-            order_number=f"POS{timezone.now().strftime('%Y%m%d%H%M%S')}",
+            order_number=f"SPOS{timezone.now().strftime('%Y%m%d%H%M%S')}",
             total_amount=0,
             final_amount=0,
             cashier=request.user.username,
@@ -798,3 +798,241 @@ def generate_receipt_with_qr(request, order_id):
 
     buffer.seek(0)
     return HttpResponse(buffer.getvalue(), content_type='application/pdf')
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from django.http import HttpResponse
+from django.utils import timezone
+from django.utils.dateparse import parse_date  # Import parse_date from Django utilities
+
+import csv
+
+from .models import POSOrder, POSOrderItem, PaymentTransaction
+
+
+@login_required
+def transaction_history(request):
+    """Show recent POS orders with search and day filter."""
+    today = timezone.localdate()
+    date_str = request.GET.get("date") or ""
+    search_query = request.GET.get("q") or ""
+
+    if date_str:
+        # Use parse_date to convert the date string into a date object
+        selected_date = parse_date(date_str) or today
+    else:
+        selected_date = today
+
+    orders = POSOrder.objects.filter(status="completed").order_by("-created_at")
+
+    if selected_date:
+        orders = orders.filter(created_at__date=selected_date)
+
+    if search_query:
+        orders = orders.filter(
+            Q(order_number__icontains=search_query)
+            | Q(customer_name__icontains=search_query)
+            | Q(customer_phone__icontains=search_query)
+        )
+
+    context = {
+        "orders": orders[:200],
+        "selected_date": selected_date,
+        "search_query": search_query,
+    }
+    return render(request, "sales/transaction_history.html", context)
+
+
+@login_required
+def export_transactions(request):
+    """Export filtered POS orders (same filters as transaction_history)."""
+    today = timezone.localdate()
+    date_str = request.GET.get("date") or ""
+    search_query = request.GET.get("q") or ""
+
+    if date_str:
+        # Use parse_date to convert the date string into a date object
+        selected_date = parse_date(date_str) or today
+    else:
+        selected_date = today
+
+    orders = POSOrder.objects.filter(status="completed").order_by("-created_at")
+
+    if selected_date:
+        orders = orders.filter(created_at__date=selected_date)
+
+    if search_query:
+        orders = orders.filter(
+            Q(order_number__icontains=search_query)
+            | Q(customer_name__icontains=search_query)
+            | Q(customer_phone__icontains=search_query)
+        )
+
+    response = HttpResponse(content_type="text/csv")
+    filename = f"transactions_{selected_date.isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "order_number",
+            "date",
+            "time",
+            "customer_name",
+            "customer_phone",
+            "payment_method",
+            "total_amount",
+            "discount_amount",
+            "final_amount",
+            "status",
+        ]
+    )
+
+    for order in orders:
+        dt = timezone.localtime(order.created_at)
+        writer.writerow(
+            [
+                order.order_number,
+                dt.date().isoformat(),
+                dt.time().strftime("%H:%M:%S"),
+                order.customer_name or "",
+                order.customer_phone or "",
+                order.payment_method,
+                order.total_amount,
+                order.discount_amount,
+                order.final_amount,
+                order.status,
+            ]
+        )
+
+    return response
+
+
+
+
+@login_required
+def export_all_orders(request):
+    """Export all POS orders as CSV (summary)."""
+    response = HttpResponse(content_type="text/csv")
+    filename = f"orders_all_{timezone.now().date().isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "order_number",
+            "created_date",
+            "created_time",
+            "customer_name",
+            "customer_phone",
+            "payment_method",
+            "total_amount",
+            "discount_amount",
+            "final_amount",
+            "status",
+        ]
+    )
+
+    orders = POSOrder.objects.all().order_by("-created_at")
+    for order in orders:
+        dt = timezone.localtime(order.created_at)
+        writer.writerow(
+            [
+                order.order_number,
+                dt.date().isoformat(),
+                dt.time().strftime("%H:%M:%S"),
+                order.customer_name or "",
+                order.customer_phone or "",
+                order.payment_method,
+                order.total_amount,
+                order.discount_amount,
+                order.final_amount,
+                order.status,
+            ]
+        )
+
+    return response
+
+
+@login_required
+def export_order_items(request):
+    """Export all order line items as CSV."""
+    response = HttpResponse(content_type="text/csv")
+    filename = f"order_items_{timezone.now().date().isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "order_number",
+            "order_date",
+            "product_name",
+            "product_sku",
+            "quantity",
+            "unit_price",
+            "line_total",
+        ]
+    )
+
+    items = POSOrderItem.objects.select_related("order", "product").all().order_by(
+        "-order__created_at"
+    )
+    for item in items:
+        order = item.order
+        product = item.product
+        dt = timezone.localtime(order.created_at)
+        writer.writerow(
+            [
+                order.order_number,
+                dt.date().isoformat(),
+                product.name if product else "",
+                product.sku if product else "",
+                item.quantity,
+                item.unit_price,
+                item.total_price,
+            ]
+        )
+
+    return response
+
+
+@login_required
+def export_payments(request):
+    """Export all payment transactions as CSV."""
+    response = HttpResponse(content_type="text/csv")
+    filename = f"payments_{timezone.now().date().isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow(
+        [
+            "order_number",
+            "payment_method",
+            "amount",
+            "reference_number",
+            "transaction_id",
+            "status",
+            "created_at",
+        ]
+    )
+
+    payments = PaymentTransaction.objects.select_related("order").all().order_by(
+        "-created_at"
+    )
+    for p in payments:
+        writer.writerow(
+            [
+                p.order.order_number if p.order else "",
+                p.payment_method,
+                p.amount,
+                p.reference_number,
+                p.transaction_id,
+                p.status,
+                p.created_at,
+            ]
+        )
+
+    return response

@@ -10,7 +10,7 @@ Overview
 
 {% block content %}
 <div class="container-fluid px-0">
-<!-- Toast Messages -->
+    <!-- Toast Messages -->
     <div class="swiftpos-toast-container">
         {% if messages %}
             {% for message in messages %}
@@ -56,89 +56,85 @@ Overview
             </div>
         </div>
     </div>
-    
-    
-    <!-- Metric Cards -->
-    
-    {# Subscription / License overview #}
-{% plan_usage as usage %}
-{% if usage.plan_name %}
-<div class="row g-3 mb-3">
-    <div class="col-12 col-lg-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <div class="small text-muted">Subscription Plan</div>
-                        <div class="h5 mb-0">{{ usage.plan_name }}</div>
-                        <div class="small text-muted text-break">{{ usage.plan_code }}</div>
-                    </div>
-                    <span class="badge {% if usage.license_active %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
-                        {% if usage.license_active %}Active{% else %}Inactive{% endif %}
-                    </span>
-                </div>
-
-                {% if usage.license_expires_at %}
-                    <div class="small text-muted mb-3">
-                        Expires: {{ usage.license_expires_at|date:"M d, Y" }}
-                    </div>
-                {% endif %}
-
-                <div class="small text-muted mb-1">Products</div>
-                <div class="d-flex justify-content-between small mb-1">
-                    <span>
-                        {{ usage.products_count }}
-                        {% if usage.max_products %}/ {{ usage.max_products }}{% else %}/ ∞{% endif %}
-                    </span>
-                    {% if usage.products_percent is not None %}
-                        <span>{{ usage.products_percent }}%</span>
-                    {% endif %}
-                </div>
-                {% if usage.products_percent is not None %}
-                    <div class="progress mb-2" style="height: 4px;">
-                        <div class="progress-bar" role="progressbar" style="width: {{ usage.products_percent }}%;"></div>
-                    </div>
-                {% endif %}
-
-                <div class="small text-muted mb-1 mt-2">Categories</div>
-                <div class="d-flex justify-content-between small mb-1">
-                    <span>
-                        {{ usage.categories_count }}
-                        {% if usage.max_categories %}/ {{ usage.max_categories }}{% else %}/ ∞{% endif %}
-                    </span>
-                    {% if usage.categories_percent is not None %}
-                        <span>{{ usage.categories_percent }}%</span>
-                    {% endif %}
-                </div>
-                {% if usage.categories_percent is not None %}
-                    <div class="progress mb-2" style="height: 4px;">
-                        <div class="progress-bar" role="progressbar" style="width: {{ usage.categories_percent }}%;"></div>
-                    </div>
-                {% endif %}
-
-                <div class="small text-muted mb-1 mt-2">Orders Today</div>
-                <div class="d-flex justify-content-between small mb-1">
-                    <span>
-                        {{ usage.today_orders_count }}
-                        {% if usage.max_orders_per_day %}/ {{ usage.max_orders_per_day }}{% else %}/ ∞{% endif %}
-                    </span>
-                    {% if usage.orders_percent is not None %}
-                        <span>{{ usage.orders_percent }}%</span>
-                    {% endif %}
-                </div>
-                {% if usage.orders_percent is not None %}
-                    <div class="progress" style="height: 4px;">
-                        <div class="progress-bar" role="progressbar" style="width: {{ usage.orders_percent }}%;"></div>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
 
     <!-- Metric Cards -->
     <div class="row g-3 mb-3">
+        {# Subscription / License overview #}
+        {% plan_usage as usage %}
+        {% if usage.plan_name %}
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <div class="small text-muted">Subscription Plan</div>
+                            <div class="h5 mb-0">{{ usage.plan_name }}</div>
+                            <div class="small text-muted text-break">{{ usage.plan_code }}</div>
+                        </div>
+                        <span class="badge {% if usage.license_active %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                            {% if usage.license_active %}Active{% else %}Inactive{% endif %}
+                        </span>
+                    </div>
+
+                    {% if usage.license_expires_at %}
+                        <div class="small text-muted mb-3">
+                            Expires: {{ usage.license_expires_at|date:"M d, Y" }}
+                        </div>
+                    {% endif %}
+
+                    <div class="small text-muted mb-1">Products</div>
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>
+                            {{ usage.products_count }}
+                            {% if usage.max_products %}/ {{ usage.max_products }}{% else %}/ ∞{% endif %}
+                        </span>
+                        {% if usage.products_percent is not None %}
+                            <span>{{ usage.products_percent }}%</span>
+                        {% endif %}
+                    </div>
+                    {% if usage.products_percent is not None %}
+                        <div class="progress mb-2" style="height: 4px;">
+                            <div class="progress-bar" role="progressbar" style="width: {{ usage.products_percent }}%;"></div>
+                        </div>
+                    {% endif %}
+
+                    <div class="small text-muted mb-1 mt-2">Categories</div>
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>
+                            {{ usage.categories_count }}
+                            {% if usage.max_categories %}/ {{ usage.max_categories }}{% else %}/ ∞{% endif %}
+                        </span>
+                        {% if usage.categories_percent is not None %}
+                            <span>{{ usage.categories_percent }}%</span>
+                        {% endif %}
+                    </div>
+                    {% if usage.categories_percent is not None %}
+                        <div class="progress mb-2" style="height: 4px;">
+                            <div class="progress-bar" role="progressbar" style="width: {{ usage.categories_percent }}%;"></div>
+                        </div>
+                    {% endif %}
+
+                    <div class="small text-muted mb-1 mt-2">Orders Today</div>
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>
+                            {{ usage.today_orders_count }}
+                            {% if usage.max_orders_per_day %}/ {{ usage.max_orders_per_day }}{% else %}/ ∞{% endif %}
+                        </span>
+                        {% if usage.orders_percent is not None %}
+                            <span>{{ usage.orders_percent }}%</span>
+                        {% endif %}
+                    </div>
+                    {% if usage.orders_percent is not None %}
+                        <div class="progress" style="height: 4px;">
+                            <div class="progress-bar" role="progressbar" style="width: {{ usage.orders_percent }}%;"></div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Today's Sales -->
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card h-100 shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
@@ -155,6 +151,7 @@ Overview
             </div>
         </div>
 
+        <!-- Average Order Value -->
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card h-100 shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
@@ -171,6 +168,7 @@ Overview
             </div>
         </div>
 
+        <!-- Customers Today -->
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card h-100 shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
@@ -187,6 +185,7 @@ Overview
             </div>
         </div>
 
+        <!-- Total Users -->
         <div class="col-12 col-sm-6 col-lg-3">
             <div class="card h-100 shadow-sm">
                 <div class="card-body d-flex justify-content-between align-items-center">
@@ -203,10 +202,8 @@ Overview
             </div>
         </div>
     </div>
-    
-    
 
-    <!-- Sales Summary & Payment Breakdown -->
+    <!-- Remaining Sections -->
     <div class="row g-3 mb-3">
         <div class="col-lg-6">
             <div class="card h-100 shadow-sm">

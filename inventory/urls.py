@@ -16,4 +16,13 @@ urlpatterns = [
     path('categories/', views.product_category_list, name='category_list'),
     path('categories/add/', views.add_category, name='add_category'),
     path('stock-history/', views.stock_adjustment_history, name='stock_adjustment_history'),
+
+    path('products/import/', views.product_bulk_import, name='product_bulk_import'),
+    path('products/import/template/', views.product_import_template, name='product_import_template'),
+    path('export/', views.export_center, name='export_center'),
+    path('export/products/', views.product_bulk_export, name='product_bulk_export'),
+    path('export/categories/', views.category_bulk_export, name='category_bulk_export'),
+    path('export/stock-movements/', views.inventory_transactions_export, name='inventory_transactions_export'),
+    path('export/stock-adjustments/', views.stock_adjustments_export, name='stock_adjustments_export'),
+
 ]

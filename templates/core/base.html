@@ -104,6 +104,12 @@
                     <span class="icon"><i class="fas fa-wallet"></i></span>
                     <span class="label">Payment Summary</span>
                 </a>
+                <a href="{% url 'sales:transaction_history' %}"
+                   class="sidebar-link">
+                    <span class="icon"><i class="fas fa-wallet"></i></span>
+                    <span class="label">Transaction History (ALL)</span>
+                </a>
+                
                 {% endif %}
 
                 {% if user.role == 'admin' or user.role == 'manager' %}
@@ -126,6 +132,21 @@
                     <span class="icon"><i class="fas fa-tags"></i></span>
                     <span class="label">Categories</span>
                 </a>
+                <a href="{% url 'inventory:product_bulk_import' %}"
+                   class="sidebar-link">
+                    <span class="icon"><i class="fas fa-tags"></i></span>
+                    <span class="label">Import Products</span>
+                </a>
+                
+
+<a href="{% url 'inventory:export_center' %}"
+   class="sidebar-link {% if current_url_name == 'export_center' %}active{% endif %}">
+    <span class="icon"><i class="fas fa-download"></i></span>
+    <span class="label">Data Export</span>
+</a>
+
+                
+                
 
                 <a href="{% url 'inventory:stock_adjustment_history' %}"
                    class="sidebar-link {% if current_url_name == 'stock_adjustment_history' %}active{% endif %}">
