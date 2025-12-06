@@ -1,5 +1,6 @@
 # core/models.py
 from django.db import models
+from django.utils import timezone
 
 class SystemSettings(models.Model):
     BUSINESS_CURRENCIES = [
@@ -178,3 +179,66 @@ class FormDataEntry(models.Model):
     
     def __str__(self):
         return f"{self.content_type}.{self.field_name} = {self.field_value}"
+        
+        
+class SubscriptionPlan(models.Model):
+    """Subscription plan definition (Free, Basic, Pro, etc.)."""
+    name = models.CharField(max_length=50, unique=True)
+    code = models.CharField(max_length=50, unique=True)
+
+    # Limits (0 = unlimited)
+    max_products = models.PositiveIntegerField(default=0)
+    max_categories = models.PositiveIntegerField(default=0)
+    max_orders_per_day = models.PositiveIntegerField(default=0)
+
+    allow_credit_sales = models.BooleanField(default=True)
+    allow_dynamic_fields = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Subscription Plan"
+        verbose_name_plural = "Subscription Plans"
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.code})"
+
+
+class License(models.Model):
+    """License for a single deployment of the POS, linked to SystemSettings."""
+    system = models.OneToOneField(
+        SystemSettings,
+        on_delete=models.CASCADE,
+        related_name="license",
+    )
+    plan = models.ForeignKey(
+        SubscriptionPlan,
+        on_delete=models.PROTECT,
+        related_name="licenses",
+    )
+    license_key = models.CharField(
+        max_length=100,
+        unique=True,
+        help_text="Secret key controlled by the developer.",
+    )
+    is_active = models.BooleanField(default=True)
+    started_at = models.DateField(default=timezone.now)
+    expires_at = models.DateField(blank=True, null=True)
+
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "License"
+        verbose_name_plural = "Licenses"
+
+    @property
+    def is_expired(self) -> bool:
+        return bool(self.expires_at and self.expires_at < timezone.now().date())
+
+    def __str__(self) -> str:
+        return f"{self.system.business_name} - {self.plan.name}"

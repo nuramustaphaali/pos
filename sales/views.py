@@ -31,6 +31,9 @@ from inventory.models import Product
 from core.models import SystemSettings, CustomField, DynamicFormData
 from .models import POSOrder, POSOrderItem, PaymentTransaction, SaleSummary, DailySalesSummary, UnusualTransaction
 from .forms import POSOrderForm, POSOrderItemForm
+from django.core.exceptions import PermissionDenied
+from core.utils import check_limit_or_block
+
 
 @login_required
 def pos_sales(request):
@@ -165,21 +168,28 @@ def pos_sales(request):
             return redirect('sales:pos')
         
         elif action == 'complete_order':
+            # Enforce daily order limit
+            try:
+                check_limit_or_block("orders_per_day")
+            except PermissionDenied as e:
+                messages.error(request, str(e))
+                return redirect('sales:pos')
+
             # Get payment method and reference from form
             payment_method = request.POST.get('payment_method', 'pos')
             reference_number = request.POST.get('reference_number', '')
             customer_name = request.POST.get('customer_name', '')
             customer_phone = request.POST.get('customer_phone', '')
-            
+
             print(f"DEBUG: Completing order - Payment: {payment_method}, Customer: {customer_name}")
-            
+
             # Update order
             order.payment_method = payment_method
             order.customer_name = customer_name
             order.customer_phone = customer_phone
             order.status = 'completed'
             order.save()
-            
+           
             # Clear session
             del request.session['current_order_id']
             

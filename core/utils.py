@@ -2,6 +2,14 @@
 import json
 from django.core.exceptions import ValidationError
 from .models import CustomField, FieldValue, DynamicFormData, FormDataEntry
+import json
+from django.core.exceptions import ValidationError, PermissionDenied
+from django.utils import timezone
+
+from .models import CustomField, FieldValue, DynamicFormData, FormDataEntry, SystemSettings, License
+from inventory.models import Product, ProductCategory
+from sales.models import POSOrder
+
 
 class DynamicFormEngine:
     """
@@ -261,3 +269,67 @@ def validate_number(value):
         float(value)
     except ValueError:
         raise ValidationError('Invalid number format')
+        
+        
+# -----------------------------
+# Licensing & Plan Limit Helpers
+# -----------------------------
+
+def get_current_license():
+    """
+    Returns the License object for this installation, or None.
+    """
+    system = SystemSettings.objects.first()
+    if not system:
+        return None
+
+    try:
+        return system.license
+    except License.DoesNotExist:
+        return None
+
+
+def check_limit_or_block(limit_name: str):
+    """
+    Central function to enforce limits.
+
+    limit_name can be:
+      - "products"
+      - "categories"
+      - "orders_per_day"
+
+    Raises PermissionDenied if limit exceeded or license invalid.
+    """
+    license_obj = get_current_license()
+
+    # If no license or deactivated, block everything.
+    if not license_obj or not license_obj.is_active or license_obj.is_expired:
+        raise PermissionDenied(
+            "Your license is inactive or has expired. Please contact the software provider."
+        )
+
+    plan = license_obj.plan
+
+    today = timezone.now().date()
+
+    # Map each limit to current usage + allowed max
+    if limit_name == "products":
+        max_allowed = plan.max_products
+        current = Product.objects.count()
+    elif limit_name == "categories":
+        max_allowed = plan.max_categories
+        current = ProductCategory.objects.count()
+    elif limit_name == "orders_per_day":
+        max_allowed = plan.max_orders_per_day
+        current = POSOrder.objects.filter(created_at__date=today).count()
+    else:
+        # Unknown limit; do nothing
+        return
+
+    # 0 means unlimited
+    if max_allowed and current >= max_allowed:
+        # Message shown to client (keep it friendly / business-like)
+        raise PermissionDenied(
+            "You have reached the limit of your current subscription plan. "
+            "Please contact the software provider to upgrade."
+        )

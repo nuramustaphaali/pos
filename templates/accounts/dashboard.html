@@ -1,5 +1,6 @@
 {% extends 'core/base.html' %}
 {% load static %}
+{% load plan_tags %}
 
 {% block title %}Dashboard - SwiftPOS{% endblock %}
 
@@ -9,15 +10,29 @@ Overview
 
 {% block content %}
 <div class="container-fluid px-0">
-    {% if messages %}
-        <div class="mb-3">
+<!-- Toast Messages -->
+    <div class="swiftpos-toast-container">
+        {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} mb-2" role="alert">
-                    {{ message }}
+                <div class="swiftpos-toast swiftpos-toast-{{ message.tags }}">
+                    <div class="toast-icon">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="toast-text">
+                        {{ message }}
+                    </div>
                 </div>
             {% endfor %}
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 
     <!-- Hero / Welcome -->
     <div class="row mb-3">
@@ -41,6 +56,86 @@ Overview
             </div>
         </div>
     </div>
+    
+    
+    <!-- Metric Cards -->
+    
+    {# Subscription / License overview #}
+{% plan_usage as usage %}
+{% if usage.plan_name %}
+<div class="row g-3 mb-3">
+    <div class="col-12 col-lg-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <div class="small text-muted">Subscription Plan</div>
+                        <div class="h5 mb-0">{{ usage.plan_name }}</div>
+                        <div class="small text-muted text-break">{{ usage.plan_code }}</div>
+                    </div>
+                    <span class="badge {% if usage.license_active %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                        {% if usage.license_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </div>
+
+                {% if usage.license_expires_at %}
+                    <div class="small text-muted mb-3">
+                        Expires: {{ usage.license_expires_at|date:"M d, Y" }}
+                    </div>
+                {% endif %}
+
+                <div class="small text-muted mb-1">Products</div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>
+                        {{ usage.products_count }}
+                        {% if usage.max_products %}/ {{ usage.max_products }}{% else %}/ ∞{% endif %}
+                    </span>
+                    {% if usage.products_percent is not None %}
+                        <span>{{ usage.products_percent }}%</span>
+                    {% endif %}
+                </div>
+                {% if usage.products_percent is not None %}
+                    <div class="progress mb-2" style="height: 4px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ usage.products_percent }}%;"></div>
+                    </div>
+                {% endif %}
+
+                <div class="small text-muted mb-1 mt-2">Categories</div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>
+                        {{ usage.categories_count }}
+                        {% if usage.max_categories %}/ {{ usage.max_categories }}{% else %}/ ∞{% endif %}
+                    </span>
+                    {% if usage.categories_percent is not None %}
+                        <span>{{ usage.categories_percent }}%</span>
+                    {% endif %}
+                </div>
+                {% if usage.categories_percent is not None %}
+                    <div class="progress mb-2" style="height: 4px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ usage.categories_percent }}%;"></div>
+                    </div>
+                {% endif %}
+
+                <div class="small text-muted mb-1 mt-2">Orders Today</div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>
+                        {{ usage.today_orders_count }}
+                        {% if usage.max_orders_per_day %}/ {{ usage.max_orders_per_day }}{% else %}/ ∞{% endif %}
+                    </span>
+                    {% if usage.orders_percent is not None %}
+                        <span>{{ usage.orders_percent }}%</span>
+                    {% endif %}
+                </div>
+                {% if usage.orders_percent is not None %}
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar" role="progressbar" style="width: {{ usage.orders_percent }}%;"></div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
     <!-- Metric Cards -->
     <div class="row g-3 mb-3">
@@ -108,6 +203,8 @@ Overview
             </div>
         </div>
     </div>
+    
+    
 
     <!-- Sales Summary & Payment Breakdown -->
     <div class="row g-3 mb-3">

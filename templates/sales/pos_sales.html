@@ -10,6 +10,29 @@ POS Terminal
 {% block content %}
 <div class="container-fluid px-0">
     <!-- Order + cashier overview -->
+    <!-- Toast Messages -->
+    <div class="swiftpos-toast-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="swiftpos-toast swiftpos-toast-{{ message.tags }}">
+                    <div class="toast-icon">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="toast-text">
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
     <div class="row mb-3">
         <div class="col-12">
             <div class="card border-0" style="background: radial-gradient(circle at top left, rgba(79,70,229,.18), transparent 55%), radial-gradient(circle at bottom right, rgba(34,197,94,.14), transparent 45%), var(--sp-surface);">
@@ -213,8 +236,13 @@ POS Terminal
                         </h6>
                     </div>
                     <div class="card-body">
-                        <form method="post">
-                            {% csrf_token %}
+                        <form method="post"
+      
+      data-offline="true"
+      data-offline-type="pos_order"
+      id="pos-form">
+    {% csrf_token %}
+   
                             <input type="hidden" name="action" value="complete_order">
 
                             <div class="mb-3">

@@ -1,0 +1,22 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Offline - Nura POS{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <img src="{% static 'core/icons/icon-192.png' %}" alt="App icon" class="mb-3" style="width: 72px; height: 72px;">
+            <h3 class="mb-3">You’re offline</h3>
+            <p class="text-muted mb-3">
+                Your device is not connected to the internet.
+                Some features may be limited, but actions you take can be queued and sent when you’re back online.
+            </p>
+            <p class="small text-muted">
+                Try reconnecting to continue syncing your sales and inventory.
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

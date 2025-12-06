@@ -11,7 +11,9 @@
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+    <link rel="manifest" href="{% static 'core/manifest.webmanifest' %}">
+    <link rel="apple-touch-icon" href="{% static 'core/icons/icon-192.png' %}">
+    
     <!-- Poppins Font -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
@@ -158,6 +160,11 @@
             {% endwith %}
 
             <!-- LOGOUT -->
+            <button id="install-app-btn"
+        class="btn btn-sm btn-outline-light d-none"
+        type="button">
+    Install App
+</button>
             <div class="sidebar-footer mt-auto p-2">
                 <a href="{% url 'logout' %}" class="sidebar-link logout-link">
                     <span class="icon"><i class="fas fa-sign-out-alt"></i></span>
@@ -289,6 +296,79 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 </script>
 
+<script>
+(function () {
+    const contentSections = document.querySelectorAll(".swiftpos-content");
+    const cards = document.querySelectorAll(".swiftpos-content .card, .swiftpos-content .metric-card");
+
+    // Mark containers & cards for animation
+    contentSections.forEach(section => {
+        section.classList.add("sp-animate-section");
+    });
+
+    cards.forEach((card, index) => {
+        card.classList.add("sp-animate-card");
+        // we store an index so we can stagger the delay
+        card.dataset.spAnimIndex = String(index);
+    });
+
+    function revealImmediately() {
+        contentSections.forEach(section => {
+            section.classList.add("sp-animate-visible");
+        });
+        cards.forEach(card => {
+            card.classList.add("sp-animate-visible");
+        });
+    }
+
+    if (!("IntersectionObserver" in window)) {
+        // Old browsers: show immediately, no animation logic
+        revealImmediately();
+        return;
+    }
+
+    // Observe cards for staggered reveal
+    const cardObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+
+                const el = entry.target;
+                const idx = parseInt(el.dataset.spAnimIndex || "0", 10);
+                const delayMs = Math.min(idx * 50, 400); // max 0.4s
+
+                el.style.transitionDelay = delayMs + "ms";
+                el.classList.add("sp-animate-visible");
+                cardObserver.unobserve(el);
+            });
+        },
+        {
+            threshold: 0.15
+        }
+    );
+
+    cards.forEach((card) => cardObserver.observe(card));
+
+    // Observe main content containers
+    const sectionObserver = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (!entry.isIntersecting) return;
+                entry.target.classList.add("sp-animate-visible");
+                sectionObserver.unobserve(entry.target);
+            });
+        },
+        {
+            threshold: 0.1
+        }
+    );
+
+    contentSections.forEach((section) => sectionObserver.observe(section));
+})();
+</script>
+ <script src="{% static 'js/pwa.js' %}"></script>
+    <script src="{% static 'js/offline-queue.js' %}"></script>
+    
 {% block extra_js %}{% endblock %}
 </body>
 </html>

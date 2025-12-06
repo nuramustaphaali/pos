@@ -252,3 +252,13 @@ def get_form_data(request, content_type, object_id):
         return JsonResponse({'success': True, 'data': data})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+        
+        
+        
+from django.shortcuts import render
+
+def offline(request):
+    """
+    Shown when the service worker can't reach network and no cached page is available.
+    """
+    return render(request, 'core/offline.html')

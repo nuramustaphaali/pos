@@ -18,13 +18,24 @@ class CustomLoginForm(AuthenticationForm):
         })
     )
 
+# accounts/forms.py
 class UserRegistrationForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Do not expose the 'superadmin' role in the public user creation form
+        if 'role' in self.fields:
+            self.fields['role'].choices = [
+                choice for choice in self.fields['role'].choices
+                if choice[0] != 'superadmin'
+            ]
+
     password1 = forms.CharField(
         widget=forms.PasswordInput(attrs={
             'class': 'form-control gradient-input',
             'placeholder': 'Enter password'
         })
     )
+    
     password2 = forms.CharField(
         widget=forms.PasswordInput(attrs={
             'class': 'form-control gradient-input',

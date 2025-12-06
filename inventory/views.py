@@ -5,7 +5,8 @@ from django.db.models import Q
 from django.core.paginator import Paginator
 from .models import Product, ProductCategory, InventoryTransaction
 from .forms import ProductForm, ProductCategoryForm
-
+from django.core.exceptions import PermissionDenied
+from core.utils import check_limit_or_block
 
 def dashboard(request):
     return render(request, 'inventory/dashboard.html')
@@ -91,19 +92,28 @@ from django.db.models import Q, F, Sum
 from django.core.paginator import Paginator
 from .models import Product, ProductCategory, InventoryTransaction, StockAdjustment
 from .forms import ProductForm, ProductCategoryForm
-
 @login_required
 def add_product(request):
     """
-    Add a new product to inventory
+    Add a new product to inventory, respecting plan limits.
     """
+    # Check limit before even showing the form
+    try:
+        check_limit_or_block("products")
+    except PermissionDenied as e:
+        messages.error(request, str(e))
+        return redirect('inventory:product_list')
+
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
             try:
+                # Check again in case another user added product in between
+                check_limit_or_block("products")
+
                 # Save the product
                 product = form.save()
-                
+
                 # Create initial stock transaction if quantity > 0
                 if product.stock_quantity > 0:
                     InventoryTransaction.objects.create(
@@ -113,8 +123,11 @@ def add_product(request):
                         reference=f'Initial stock for {product.name}',
                         created_by=request.user.username
                     )
-                
+
                 messages.success(request, f'Product "{product.name}" added successfully!')
+                return redirect('inventory:product_list')
+            except PermissionDenied as e:
+                messages.error(request, str(e))
                 return redirect('inventory:product_list')
             except Exception as e:
                 messages.error(request, f'Error adding product: {str(e)}')
@@ -122,13 +135,15 @@ def add_product(request):
             messages.error(request, 'Please correct the errors below.')
     else:
         form = ProductForm()
-    
+
     context = {
         'form': form,
         'user_role': request.user.role,
         'user_name': request.user.get_full_name() or request.user.username,
     }
     return render(request, 'inventory/add_product.html', context)
+
+
 
 @login_required
 def edit_product(request, product_id):
@@ -179,31 +194,7 @@ def edit_product(request, product_id):
     }
     return render(request, 'inventory/edit_product.html', context)
 
-@login_required
-def add_category(request):
-    """
-    Add a new product category
-    """
-    if request.method == 'POST':
-        form = ProductCategoryForm(request.POST)
-        if form.is_valid():
-            try:
-                category = form.save()
-                messages.success(request, f'Category "{category.name}" created successfully!')
-                return redirect('inventory:category_list')
-            except Exception as e:
-                messages.error(request, f'Error creating category: {str(e)}')
-        else:
-            messages.error(request, 'Please correct the errors below.')
-    else:
-        form = ProductCategoryForm()
-    
-    context = {
-        'form': form,
-        'user_role': request.user.role,
-        'user_name': request.user.get_full_name() or request.user.username,
-    }
-    return render(request, 'inventory/add_category.html', context)
+
 
 @login_required
 def product_detail(request, product_id):
@@ -237,15 +228,34 @@ def product_category_list(request):
 
 @login_required
 def add_category(request):
+    """
+    Add a new product category, respecting plan limits.
+    """
+    try:
+        check_limit_or_block("categories")
+    except PermissionDenied as e:
+        messages.error(request, str(e))
+        return redirect('inventory:category_list')
+
     if request.method == 'POST':
         form = ProductCategoryForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Category created successfully!')
-            return redirect('inventory:category_list')
+            try:
+                # Check again in case someone else added a category
+                check_limit_or_block("categories")
+                category = form.save()
+                messages.success(request, f'Category "{category.name}" created successfully!')
+                return redirect('inventory:category_list')
+            except PermissionDenied as e:
+                messages.error(request, str(e))
+                return redirect('inventory:category_list')
+            except Exception as e:
+                messages.error(request, f'Error creating category: {str(e)}')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
         form = ProductCategoryForm()
-    
+
     context = {
         'form': form,
         'user_role': request.user.role,

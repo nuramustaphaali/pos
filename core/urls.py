@@ -11,4 +11,6 @@ urlpatterns = [
     path('field-builder/field/<int:field_id>/delete/', views.delete_field, name='delete_field'),
     path('dynamic-form/', views.dynamic_form_test, name='dynamic_form_test'),
     path('api/form-data/<str:content_type>/<int:object_id>/', views.get_form_data, name='get_form_data'),
+
+    path('offline/', views.offline, name='offline'),
 ]

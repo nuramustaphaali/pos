@@ -268,14 +268,15 @@ from .decorators import role_required
 
 @role_required(['admin', 'manager'])
 def user_management(request):
-    users = CustomUser.objects.all()
+    # Hide superadmin accounts from the user management list
+    users = CustomUser.objects.exclude(role='superadmin')
     context = {
         'users': users,
         'user_role': request.user.role,
         'user_name': request.user.get_full_name() or request.user.username,
     }
     return render(request, 'accounts/user_management.html', context)
-
+    
 @role_required(['admin'])
 def create_user(request):
     if request.method == 'POST':
@@ -353,6 +354,10 @@ def delete_user(request, user_id):
     """Delete user"""
     if request.method == 'POST':
         user = get_object_or_404(CustomUser, id=user_id)
+        # Never allow deleting a superadmin from the web UI
+        if user.role == 'superadmin':
+            messages.error(request, 'You cannot delete a superadmin account.')
+            return redirect('user_management')
         username = user.username
         user.delete()
         messages.success(request, f'User {username} deleted successfully!')

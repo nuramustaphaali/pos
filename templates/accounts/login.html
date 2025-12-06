@@ -238,15 +238,29 @@
                             Enter your staff login to access sales, inventory and reports.
                         </p>
 
-                        {% if messages %}
-                            <div class="mb-3">
-                                {% for message in messages %}
-                                    <div class="alert alert-{{ message.tags }} mb-2" role="alert">
-                                        {{ message }}
-                                    </div>
-                                {% endfor %}
-                            </div>
+                        <!-- Toast Messages -->
+    <div class="swiftpos-toast-container">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="swiftpos-toast swiftpos-toast-{{ message.tags }}">
+                    <div class="toast-icon">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
                         {% endif %}
+                    </div>
+                    <div class="toast-text">
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 
                         {% if form.non_field_errors %}
                             <div class="alert alert-danger mb-3" role="alert">
@@ -256,7 +270,10 @@
                             </div>
                         {% endif %}
 
-                        <form method="post" novalidate>
+                        <form method="post"
+      data-offline="true"
+      data-offline-type="login"
+      novalidate>
                             {% csrf_token %}
 
                             <div class="mb-3">

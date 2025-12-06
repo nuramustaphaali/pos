@@ -723,3 +723,90 @@ body.sidebar-mobile-open .swiftpos-overlay {
         font-size: 0.8rem !important;
     }
 }
+
+
+/* =======================================
+   SwiftPOS – Motion / Card Animations
+======================================= */
+
+.card.sp-animate-card,
+.metric-card.sp-animate-card {
+    position: relative;
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+    transition:
+        opacity 0.45s ease-out,
+        transform 0.45s cubic-bezier(0.22, 0.61, 0.36, 1),
+        box-shadow 0.25s ease-out,
+        border-color 0.25s ease-out,
+        background-color 0.25s ease-out;
+    will-change: opacity, transform;
+}
+
+/* When card becomes visible */
+.card.sp-animate-card.sp-animate-visible,
+.metric-card.sp-animate-card.sp-animate-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* Hover "lift" + stronger shadow */
+.card.sp-animate-card:hover,
+.metric-card.sp-animate-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: 0 22px 60px rgba(15, 23, 42, 0.18);
+    border-color: rgba(79, 70, 229, 0.22); /* match your primary */
+    background-color: var(--sp-surface-soft);
+}
+
+/* Optional: subtle sheen in card header for a premium feel */
+.card.sp-animate-card .card-header,
+.metric-card.sp-animate-card .card-header {
+    background: linear-gradient(
+        120deg,
+        rgba(79, 70, 229, 0.06),
+        rgba(79, 70, 229, 0.00),
+        rgba(79, 70, 229, 0.10)
+    );
+    background-size: 220% 100%;
+    animation: sp-card-header-sheen 9s linear infinite;
+}
+
+@keyframes sp-card-header-sheen {
+    0% {
+        background-position: 200% 0;
+    }
+    50% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Fade-in for the main content container */
+.swiftpos-content.sp-animate-section {
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+        opacity 0.4s ease-out,
+        transform 0.4s ease-out;
+    will-change: opacity, transform;
+}
+
+.swiftpos-content.sp-animate-section.sp-animate-visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .card.sp-animate-card,
+    .metric-card.sp-animate-card,
+    .swiftpos-content.sp-animate-section {
+        transition: none !important;
+        animation: none !important;
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}

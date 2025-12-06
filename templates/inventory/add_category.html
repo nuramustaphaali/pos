@@ -11,14 +11,29 @@ Add Category
 {% block content %}
 <div class="container-fluid px-0">
 
-    {# Django messages #}
-    {% if messages %}
-        <div class="mb-3">
+    <!-- Toast Messages -->
+    <div class="swiftpos-toast-container">
+        {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} mb-2">{{ message }}</div>
+                <div class="swiftpos-toast swiftpos-toast-{{ message.tags }}">
+                    <div class="toast-icon">
+                        {% if message.tags == 'success' %}
+                            <i class="fas fa-check-circle"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="fas fa-exclamation-circle"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle"></i>
+                        {% else %}
+                            <i class="fas fa-info-circle"></i>
+                        {% endif %}
+                    </div>
+                    <div class="toast-text">
+                        {{ message }}
+                    </div>
+                </div>
             {% endfor %}
-        </div>
-    {% endif %}
+        {% endif %}
+    </div>
 
     {# Non-field form errors #}
     {% if form.non_field_errors %}
@@ -42,8 +57,11 @@ Add Category
 
     <div class="card">
         <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
+            <form method="post"
+    
+      novalidate>
+    {% csrf_token %}
+    
 
                 <div class="row g-3">
                     {# Render every field from ProductCategoryForm #}
